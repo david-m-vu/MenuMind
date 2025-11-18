@@ -1,0 +1,42 @@
+.Navbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--primary);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0.6rem 1.25rem;
+    box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+.navbarItem {
+    border: none;
+    padding: 0.75rem;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 150ms ease;
+    gap: 1rem;
+    opacity: 0.5;
+}
+
+.navbarItem:focus-visible,
+.navbarItem:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    opacity: 1;
+}
+
+.navbarItem.is-active {
+    background-color: rgba(255, 255, 255, 0.3);
+    opacity: 1;
+}
+
+.navbarIcon {
+    width: 28px;
+    height: 28px;
+}
