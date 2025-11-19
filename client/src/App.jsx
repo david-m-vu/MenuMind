@@ -9,13 +9,13 @@ import Camera from "./scenes/Camera/Camera.jsx";
 import Navbar from "./components/Navbar/Navbar.jsx";
 
 const WithNavbarLayout = () => {
-  // outlet renders the matching child route of a parent route - allows parent component to render its own content along with the content of a matching child route
-  // matches either <Home/> or <Profile/>
   return (
-    <>
-      <Outlet /> 
+    <div className="appWithNavbarLayout">
+      <div className="appContent">
+        <Outlet />
+      </div>
       <Navbar />
-    </>
+    </div>
   )
 }
 
