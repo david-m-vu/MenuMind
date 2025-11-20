@@ -38,13 +38,14 @@ const tempResults = placeSearchFilteredJSON.results.map((result) => {
 const Home = () => {
     const canUseGeolocation = typeof window !== "undefined" && "geolocation" in navigator
 
-    const [userLocation, setUserLocation] = useState(null)
+    const [mapCenter, setMapCenter] = useState(null)
+    const [mapHeight, setMapHeight] = useState(0)
     const [geoError, setGeoError] = useState(() =>
         canUseGeolocation ? null : "Geolocation is not supported by your browser."
     ) // pass a function so that it evaluates only on the first render
     const [searchQueryInput, setSearchQueryInput] = useState("")
     const [searchLocationInput, setSearchLocationInput] = useState("")
-    const [mapHeight, setMapHeight] = useState(0)
+    
     const [searchResults, setSearchResults] = useState([])
     const [geocodedLocation, setGeocodedLocation] = useState(null)
     
@@ -72,109 +73,7 @@ const Home = () => {
         []
     )
 
-    // handles asking for user's location
-    useEffect(() => {
-        if (!canUseGeolocation) {
-            return
-        }
-
-        const watcher = navigator.geolocation.watchPosition(
-            (position) => {
-                if (hasSetInitialUserLocation.current) { // set map center only at the beginning
-                    setGeoError(null)
-                    return
-                }
-                hasSetInitialUserLocation.current = true
-                const { latitude, longitude } = position.coords
-                setUserLocation({ lat: latitude, lng: longitude })
-                setGeoError(null)
-            },
-            (error) => {
-                setGeoError(error.message)
-            },
-            {
-                enableHighAccuracy: true,
-                maximumAge: 10_000,
-                timeout: 10_000,
-            }
-        )
-
-        return () => navigator.geolocation.clearWatch(watcher)
-    }, [canUseGeolocation])
-
-    // sets address input to user's current location on initialization
-    useEffect(() => {
-        if (hasInitializedLocation.current) return
-        if (!userLocation) return
-        if (searchLocationInput.trim().length > 0) return
-
-        const initializeAddress = async () => {
-            try {
-                const geocodeData = await reverseGeocodeLocation(userLocation)
-                if (geocodeData) {
-                    setGeocodedLocation(geocodeData)
-                    setSearchLocationInput(geocodeData.formattedAddress)
-                }
-            } catch (error) {
-                console.error("Reverse geocoding failed:", error)
-            } finally {
-                hasInitializedLocation.current = true
-            }
-        }
-
-        initializeAddress()
-    }, [userLocation, searchLocationInput])
-
-    const handleFormSubmit = async (event) => {
-        event.preventDefault()
-
-        if (searchQueryInput === "") {
-            return;
-        }
-
-        // if input for location, convert it to coordinates
-        if (searchLocationInput !== "") {
-            try {
-                const geocodeData = await geocodeLocation(searchLocationInput)
-                if (geocodeData) {
-                    console.log("Geocoded:", geocodeData)
-                    setGeocodedLocation(geocodeData)
-                    // setSearchLocation(geocodeData.formattedAddress)
-                    setUserLocation(geocodeData.location)
-                    console.log(geocodeData.location);
-
-                }
-            } catch (error) {
-                console.error("Geocoding failed:", error)
-            }
-        } else if (userLocation) { // use user's current location
-            try {
-                const geocodeData = await reverseGeocodeLocation(userLocation)
-                if (geocodeData) {
-                    setGeocodedLocation(geocodeData)
-                    setSearchLocationInput(geocodeData.formattedAddress)
-                    setUserLocation(geocodeData.location)
-                    console.log("Reverse geocoded:", geocodeData)
-                }
-            } catch (error) {
-                console.error("Reverse geocoding failed:", error)
-            }
-        }
-
-
-        console.log(searchQueryInput, searchLocationInput)
-
-        // THIS IS TEMPORARY WHILE TEMPRESULTS IS USED (UC BERKELEY COORDS)
-        setUserLocation({lat: 37.8712141, lng: -122.255463})
-        setSearchResults(tempResults)
-    }
-
-    const handleFormKeyDown = (event) => {
-        if (event.key === "Enter") {
-            handleFormSubmit(event)
-        }
-    }
-
+    // sets map view positioning on resize
     useEffect(() => {
         const updateMapHeight = () => {
             if (typeof window === "undefined") {
@@ -190,6 +89,113 @@ const Home = () => {
         window.addEventListener("resize", updateMapHeight) // updates map height on resize
         return () => window.removeEventListener("resize", updateMapHeight)
     }, [])
+
+    // handles asking for user's location
+    useEffect(() => {
+        if (!canUseGeolocation) {
+            return
+        }
+
+        const watcher = navigator.geolocation.watchPosition(
+            (position) => {
+                if (hasSetInitialUserLocation.current) { // set map center only at the beginning
+                    setGeoError(null)
+                    return
+                }
+                hasSetInitialUserLocation.current = true
+                const { latitude, longitude } = position.coords
+                setMapCenter({ lat: latitude, lng: longitude })
+                setGeoError(null)
+            },
+            (error) => {
+                if (error.code !== 1) { // code 1 means user denied geolocation
+                    setGeoError(error.message)
+                }
+                console.log(error.message);
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: 10_000,
+                timeout: 10_000,
+            }
+        )
+
+        return () => navigator.geolocation.clearWatch(watcher)
+    }, [canUseGeolocation])
+
+    // sets address input to user's current location on initialization
+    useEffect(() => {
+        if (hasInitializedLocation.current) return
+        if (!mapCenter) return
+        if (searchLocationInput.trim().length > 0) return
+
+        const initializeAddress = async () => {
+            try {
+                const geocodeData = await reverseGeocodeLocation(mapCenter)
+                if (geocodeData) {
+                    setGeocodedLocation(geocodeData)
+                    setSearchLocationInput(geocodeData.formattedAddress)
+                }
+            } catch (error) {
+                console.error("Reverse geocoding failed:", error)
+            } finally {
+                hasInitializedLocation.current = true
+            }
+        }
+
+        initializeAddress()
+    }, [mapCenter, searchLocationInput])
+
+    const handleFormSubmit = async (event) => {
+        event.preventDefault()
+
+        if (searchQueryInput === "") {
+            return;
+        }
+
+        // if input for location, convert it to coordinates
+        let geocodeData;
+        if (searchLocationInput !== "") {
+            try {
+                geocodeData = await geocodeLocation(searchLocationInput)
+                if (geocodeData) {
+                    console.log("Geocoded:", geocodeData)
+                    setGeocodedLocation(geocodeData)
+                    // setSearchLocation(geocodeData.formattedAddress)
+                    setMapCenter(geocodeData.location)
+                    console.log(geocodeData.location);
+
+                }
+            } catch (error) {
+                console.error("Geocoding failed:", error)
+            }
+        } else if (mapCenter) { // use user's current location
+            try {
+                geocodeData = await reverseGeocodeLocation(mapCenter)
+                if (geocodeData) {
+                    setGeocodedLocation(geocodeData)
+                    setSearchLocationInput(geocodeData.formattedAddress)
+                    setMapCenter(geocodeData.location)
+                    console.log("Reverse geocoded:", geocodeData)
+                }
+            } catch (error) {
+                console.error("Reverse geocoding failed:", error)
+            }
+        }
+
+
+        console.log(searchQueryInput, searchLocationInput)
+
+        // THIS IS TEMPORARY WHILE TEMPRESULTS IS USED (UC BERKELEY COORDS)
+        setMapCenter({lat: 37.8712141, lng: -122.255463})
+        setSearchResults(tempResults)
+    }
+
+    const handleFormKeyDown = (event) => {
+        if (event.key === "Enter") {
+            handleFormSubmit(event)
+        }
+    }
 
     return (
         <div className="homeScreen">
@@ -245,8 +251,8 @@ const Home = () => {
                     ) : (
                         <GoogleMap
                             mapContainerClassName="homeMap"
-                            center={userLocation ?? fallbackCenter}
-                            zoom={userLocation ? 15 : 12}
+                            center={mapCenter ?? fallbackCenter}
+                            zoom={mapCenter ? 15 : 12}
                             options={mapOptions}
                         >
                             {searchResults.map((result) => (

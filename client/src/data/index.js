@@ -544,6 +544,8 @@ const placeSearchJSON = {
   }
 }
 
+
+
 export const placeSearchFilteredJSON = {
   "results": [
     {
@@ -578,6 +580,8 @@ export const placeSearchFilteredJSON = {
       "tel": "(510) 845-1101",
       "website": "http://muraccis.com"
     },
+
+
     {
       "fsq_place_id": "4aadb4daf964a520516120e3",
       "latitude": 37.87102468588369,
