@@ -14,7 +14,6 @@ const searchFoursquarePlaces = async (lat, lng, query, radius, limit) => {
                 context: null
             }
         }
-        
     }
 
     if (!process.env.FOURSQUARE_API_KEY) {
@@ -26,7 +25,6 @@ const searchFoursquarePlaces = async (lat, lng, query, radius, limit) => {
                 context: null
             }
         }
-
     }
 
     try {

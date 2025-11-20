@@ -544,8 +544,6 @@ const placeSearchJSON = {
   }
 }
 
-
-
 export const placeSearchFilteredJSON = {
   "results": [
     {

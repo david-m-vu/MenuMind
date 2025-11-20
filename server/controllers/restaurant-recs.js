@@ -1,5 +1,5 @@
-const axios = require("axios")
-const { searchFoursquarePlaces } = require("../requests/foursquare.js")
+const { searchFoursquarePlaces } = require("../requests/foursquare.js");
+const { curateFoursquarePlaces } = require("../requests/reagent.js");
 
 const normalizeListInput = (value) => {
     if (!value) return []
@@ -95,104 +95,10 @@ const getRecommendedRestaurants = async (req, res, next) => {
             return res.status(status).json({ error: message })
         }
 
-        const placesNormalized = foursquareRes.results.map((place) => {
-            const categories = Array.isArray(place.categories) // probably not gonna be not an array, but just in case
-                ? place.categories.map((category) => category.name).filter((categoryName) => categoryName !== "")
-                : place.categories?.name
-                  ? [place.categories.name]
-                  : []
-            const categoryIds = Array.isArray(place.categories)
-                ? place.categories.map((category) => category.fsq_category_id).filter(Boolean)
-                : []
-
-            const normalized = {
-                fsq_place_id: place.fsq_place_id,
-                restaurant_name: place.name,
-                categories,
-                category_ids: categoryIds,
-                distance: place.distance,
-                location: place.location,
-            }
-
-            if (place.website) {
-                normalized.website = place.website
-            }
-            if (Array.isArray(place.chains) && place.chains.length > 0) {
-                normalized.chains = place.chains.map((chain) => chain.name).filter((name) => name !== "")
-            }
-            if (place.social_media && Object.keys(place.social_media).length > 0) {
-                normalized.social_media = place.social_media
-            }
-
-            return normalized
-        })
-
-        console.log("placesNormalized", placesNormalized)
-
-        let aiRecommendations = null
-
-        try {
-            const aiResponse = await axios.post(
-                "https://noggin.rea.gent/soviet-pony-3508",
-                {
-                    query,
-                    dietaryConditions,
-                    dietaryRestrictions,
-                    places: JSON.stringify(placesNormalized, null, 2),
-                    preferences: query,
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${process.env.REAGENT_API_KEY}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            )
-            aiRecommendations = aiResponse.data
-            if (typeof aiRecommendations === "string") { //probably won't be a string
-                try {
-                    aiRecommendations = JSON.parse(aiRecommendations)
-                } catch (parseError) {
-                    console.warn("Unable to parse AI recommendations JSON:", parseError)
-                    aiRecommendations = { raw: aiRecommendations }
-                }
-            }
-        } catch (error) {
-            console.error("ReAgent request failed:", error.response?.data ?? error.message)
-            aiRecommendations = {
-                error: "Failed to generate AI recommendations.",
-                details: error.response?.data ?? null,
-            }
-        }
-
-        const placeById = new Map(
-            foursquareRes.results.map((place) => [place.fsq_place_id, place])
-        )
-
-        const aiRecommendationList = Array.isArray(aiRecommendations)
-            ? aiRecommendations
-            : Array.isArray(aiRecommendations?.recommendations)
-                ? aiRecommendations.recommendations
-                : []
-
-        const combinedRecommendations = aiRecommendationList
-            .map((recommendation) => {
-                if (!recommendation?.fsq_place_id) {
-                    return null
-                }
-                const matchedPlace = placeById.get(recommendation.fsq_place_id)
-                if (!matchedPlace) {
-                    return null
-                }
-                return {
-                    ...matchedPlace,
-                    ...recommendation,
-                }
-            })
-            .filter(Boolean) // filter out falsy values like null
+        const recommendedRestaurants = await curateFoursquarePlaces(foursquareRes.results, query, dietaryConditions, dietaryRestrictions);
 
         res.status(200).json({
-            results: combinedRecommendations,
+            results: recommendedRestaurants,
         })
     } catch (error) {
         next(error)

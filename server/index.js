@@ -9,10 +9,32 @@ const restaurantRecsRouter = require("./routes/restaurant-recs")
 const app = express()
 const PORT = process.env.PORT || 4000
 
-// allow requests only from client orign
-app.use( 
+const allowedOrigins = (process.env.CLIENT_URL || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+
+if (allowedOrigins.length === 0) {
+    console.warn(
+        "Warning: CLIENT_URL environment variable is not set. Requests with an Origin header will be rejected."
+    )
+}
+
+app.use(
     cors({
-        origin: process.env.CLIENT_URL
+        origin: (origin, callback) => {
+            if (!origin) {
+                return callback(null, true)
+            }
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true)
+            }
+            if (allowedOrigins.length === 0) {
+                return callback(new Error("No CLIENT_URL configured; refusing cross-origin request."))
+            }
+            return callback(new Error(`Origin ${origin} not allowed by CORS`))
+        },
+        credentials: true,
     })
 )
 app.use(express.json())

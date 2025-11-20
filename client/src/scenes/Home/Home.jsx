@@ -2,12 +2,14 @@ import "./Home.css"
 
 import { useMemo, useState, useEffect, useRef } from "react"
 import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api"
-import { geocodeLocation, reverseGeocodeLocation } from "../../components/requests/index.js"
+import { geocodeLocation, reverseGeocodeLocation } from "../../requests/geocode.js"
+import { getRecommendedRestaurants } from "../../requests/restaurant-recs.js"
 
 import TitleBanner from "../../components/TitleBanner/TitleBanner.jsx"
 import SearchIcon from "../../assets/icons/search-icon.svg";
 
-import { placeSearchFilteredJSON } from "../../data/index.js";
+import { placeSearchFilteredJSON } from "../../data/foursquarePlaces/index.js";
+import { testDietaryProfile1 } from "../../data/dietaryProfile/index.js"
 
 // const tempData = {
 //     restaurants: [
@@ -154,7 +156,7 @@ const Home = () => {
         }
 
         // if input for location, convert it to coordinates
-        let geocodeData;
+        let geocodeData
         if (searchLocationInput !== "") {
             try {
                 geocodeData = await geocodeLocation(searchLocationInput)
@@ -163,11 +165,11 @@ const Home = () => {
                     setGeocodedLocation(geocodeData)
                     // setSearchLocation(geocodeData.formattedAddress)
                     setMapCenter(geocodeData.location)
-                    console.log(geocodeData.location);
-
+                    console.log(geocodeData.location)
                 }
             } catch (error) {
                 console.error("Geocoding failed:", error)
+                return
             }
         } else if (mapCenter) { // use user's current location
             try {
@@ -180,15 +182,35 @@ const Home = () => {
                 }
             } catch (error) {
                 console.error("Reverse geocoding failed:", error)
+                return
             }
         }
 
 
         console.log(searchQueryInput, searchLocationInput)
 
-        // THIS IS TEMPORARY WHILE TEMPRESULTS IS USED (UC BERKELEY COORDS)
-        setMapCenter({lat: 37.8712141, lng: -122.255463})
-        setSearchResults(tempResults)
+        const coordinates = geocodeData?.location ?? mapCenter
+        if (!coordinates) {
+            console.error("Unable to determine coordinates for recommendation search.")
+            return
+        }
+
+        // call restaurant-recs endpoint
+        try {
+            const { results } = await getRecommendedRestaurants({
+                query: searchQueryInput,
+                coordinates,
+                dietaryConditions: testDietaryProfile1.dietaryConditions,
+                dietaryRestrictions: testDietaryProfile1.dietaryRestrictions,
+            })
+            setSearchResults(results ?? [])
+            console.log(results)
+        } catch (error) {
+            console.error("Request to restaurant-recs failed:", error);
+            return;
+        }
+
+        
     }
 
     const handleFormKeyDown = (event) => {
