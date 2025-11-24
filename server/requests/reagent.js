@@ -10,20 +10,20 @@ const axios = require("axios");
  */
 const curateFoursquarePlaces = async (foursquarePlaces, query, dietaryConditions, dietaryRestrictions) => {
     const placesNormalized = foursquarePlaces.map((place) => {
-        const categories = Array.isArray(place.categories) // probably not gonna be not an array, but just in case
+        const categories = Array.isArray(place.categories) // probably not gonna be something other than an array, but just in case
             ? place.categories.map((category) => category.name).filter((categoryName) => categoryName !== "")
             : place.categories?.name
                 ? [place.categories.name]
                 : []
-        const categoryIds = Array.isArray(place.categories)
-            ? place.categories.map((category) => category.fsq_category_id).filter(Boolean)
-            : []
+        // const categoryIds = Array.isArray(place.categories)
+        //     ? place.categories.map((category) => category.fsq_category_id).filter(Boolean)
+        //     : []
 
         const normalized = {
             fsq_place_id: place.fsq_place_id,
-            restaurant_name: place.name,
+            name: place.name, // restaurant_name
             categories,
-            category_ids: categoryIds,
+            // category_ids: categoryIds,
             distance: place.distance,
             location: place.location,
         }
@@ -62,7 +62,7 @@ const curateFoursquarePlaces = async (foursquarePlaces, query, dietaryConditions
             }
         )
         aiRecommendations = aiResponse.data
-        if (typeof aiRecommendations === "string") { //probably won't be a string
+        if (typeof aiRecommendations === "string") { // probably won't be a string
             try {
                 aiRecommendations = JSON.parse(aiRecommendations)
             } catch (parseError) {

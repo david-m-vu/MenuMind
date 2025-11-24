@@ -52,14 +52,24 @@ const normalizeListInput = (value) => {
                     }
                 }
             ],
-        }
-    ],
-    ...
+             "distance": 1267,
+            "location": {
+                "address": "2451 Shattuck Ave",
+                "locality": "Berkeley",
+                "region": "CA",
+                "postcode": "94704",
+                "country": "US",
+                "formatted_address": "2451 Shattuck Ave, Berkeley, CA 94704"
+            },
+            "name": "Fish & Bird Sousaku Izakaya",
+            "social_media": {
+                "twitter": ""
+            },
+            "tel": "(510) 705-1539",
+            "website": "http://fishbirdizakaya.com",
 
-    recommendations: [
-        {
-            "fsq_place_id": "5418d2cd498ee5ccc0ead6cc",
-            "restaurant_name": "Muracci's Japanese Curry & Grill",
+
+            // from AI recommendation
             "fit_score": 5,
             "positives": [
                 "Specializes in Japanese curry & grill — likely to offer chicken with rice (direct match for craving).",
@@ -72,7 +82,8 @@ const normalizeListInput = (value) => {
             "notes": "Assuming the menu includes chicken curry and grilled chicken dishes; specific ingredients (use of milk in roux) not provided — confirm dairy content and request low‑spice, plain white rice and separated preparation to reduce cross-contact."
         },
         ...
-    ] 
+    ]
+    }
  */
 const getRecommendedRestaurants = async (req, res, next) => {
     try {

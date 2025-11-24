@@ -2,14 +2,15 @@ export const getRecommendedRestaurants = async ({ query, coordinates, dietaryCon
     if (!query?.trim()) {
         throw new Error("Query is required")
     }
-    if (!coordinates?.lat || !coordinates?.lng) {
-        throw new Error("Coordinates are required")
+    const { lat, lng } = coordinates || {}
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        throw new Error("Valid latitude and longitude are required")
     }
 
     const url = new URL(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/restaurant-recs`)
     url.searchParams.set("query", query)
-    url.searchParams.set("lat", coordinates.lat)
-    url.searchParams.set("lng", coordinates.lng)
+    url.searchParams.set("lat", lat)
+    url.searchParams.set("lng", lng)
     url.searchParams.set("radius", radius)
     url.searchParams.set("limit", limit)
 

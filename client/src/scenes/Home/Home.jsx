@@ -1,7 +1,7 @@
 import "./Home.css"
 
 import { useMemo, useState, useEffect, useRef } from "react"
-import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api"
+import { GoogleMap, useGoogleMap, useLoadScript } from "@react-google-maps/api"
 import { geocodeLocation, reverseGeocodeLocation } from "../../requests/geocode.js"
 import { getRecommendedRestaurants } from "../../requests/restaurant-recs.js"
 
@@ -29,13 +29,20 @@ import { testDietaryProfile1 } from "../../data/dietaryProfile/index.js"
 const tempResults = placeSearchFilteredJSON.results.map((result) => {
     return {
         ...result,
-        ds_score: 5,
-        reasons: {
-            positives: [],
-            negatives: []
-        }
+        fit_score: 5,
+        positives: [
+            "this good 1",
+            "this good 2"
+        ],
+        negatives: [
+            "this lowkey bad though 1",
+            "this lowkey bad though 2"
+        ],
+        notes: "goated restaurant tho"
     }
 })
+
+const libraries = ["marker"]
 
 const Home = () => {
     const canUseGeolocation = typeof window !== "undefined" && "geolocation" in navigator
@@ -49,7 +56,9 @@ const Home = () => {
     const [searchLocationInput, setSearchLocationInput] = useState("")
     
     const [searchResults, setSearchResults] = useState([])
+    const [isLoadingResults, setIsLoadingResults] = useState(false)
     const [geocodedLocation, setGeocodedLocation] = useState(null)
+    const [selectedMarkerId, setSelectedMarkerId] = useState(null)
     
     const headerRef = useRef(null)
     const hasInitializedLocation = useRef(false) // ensure we only auto-fill location input once
@@ -58,21 +67,25 @@ const Home = () => {
     // useLoadScript is a helper that loads the Google Maps JS API asynchronously for you, injecting API key/libraries
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+        libraries,
     })
 
-        // use useMemo so that mapCenter doesn't get recomputed on rerender leading to a different reference, affecting GoogleMap since it's passed in as a prop
+    // use useMemo so that mapCenter doesn't get recomputed on rerender leading to a different reference, affecting GoogleMap since it's passed in as a prop
     const fallbackCenter = useMemo(
         () => ({ lat: 37.871417334009834, lng: -122.25546300259538 }), // center at UC Berkeley
         []
     )
+
+    const mapId = import.meta.env.VITE_GOOGLE_MAP_ID
 
     // use useMemo so that mapOptions doesn't get recomputed on rerender leading to a different reference, affecting GoogleMap since it's passed in as a prop
     const mapOptions = useMemo(
         () => ({
             disableDefaultUI: true,
             zoomControl: true,
+            mapId,
         }),
-        []
+        [mapId]
     )
 
     // sets map view positioning on resize
@@ -125,11 +138,11 @@ const Home = () => {
         return () => navigator.geolocation.clearWatch(watcher)
     }, [canUseGeolocation])
 
-    // sets address input to user's current location on initialization
+    // sets address input to user's current location ON INITIALIZATION
     useEffect(() => {
         if (hasInitializedLocation.current) return
         if (!mapCenter) return
-        if (searchLocationInput.trim().length > 0) return
+        // if (searchLocationInput.trim().length > 0) return
 
         const initializeAddress = async () => {
             try {
@@ -146,7 +159,7 @@ const Home = () => {
         }
 
         initializeAddress()
-    }, [mapCenter, searchLocationInput])
+    }, [mapCenter])
 
     const handleFormSubmit = async (event) => {
         event.preventDefault()
@@ -189,34 +202,43 @@ const Home = () => {
 
         console.log(searchQueryInput, searchLocationInput)
 
-        const coordinates = geocodeData?.location ?? mapCenter
-        if (!coordinates) {
-            console.error("Unable to determine coordinates for recommendation search.")
-            return
-        }
+        // const coordinates = geocodeData?.location ?? mapCenter
+        // if (!coordinates) {
+        //     console.error("Unable to determine coordinates for recommendation search.")
+        //     return
+        // }
 
         // call restaurant-recs endpoint
         try {
-            const { results } = await getRecommendedRestaurants({
-                query: searchQueryInput,
-                coordinates,
-                dietaryConditions: testDietaryProfile1.dietaryConditions,
-                dietaryRestrictions: testDietaryProfile1.dietaryRestrictions,
-            })
-            setSearchResults(results ?? [])
-            console.log(results)
+            setIsLoadingResults(true)
+            // const { results } = await getRecommendedRestaurants({
+            //     query: searchQueryInput,
+            //     coordinates,
+            //     dietaryConditions: testDietaryProfile1.dietaryConditions,
+            //     dietaryRestrictions: testDietaryProfile1.dietaryRestrictions,
+            // })
+            // setSearchResults(results ?? [])
+            // console.log(results)
         } catch (error) {
             console.error("Request to restaurant-recs failed:", error);
             return;
+        } finally {
+            setTimeout(() => {
+                setSearchResults(tempResults)
+                setIsLoadingResults(false)
+            }, 5000)
+          
         }
-
-        
     }
 
     const handleFormKeyDown = (event) => {
         if (event.key === "Enter") {
             handleFormSubmit(event)
         }
+    }
+
+    const handleMarkerSelect = (markerId) => {
+        setSelectedMarkerId((current) => (current === markerId ? null : markerId))
     }
 
     return (
@@ -276,14 +298,23 @@ const Home = () => {
                             center={mapCenter ?? fallbackCenter}
                             zoom={mapCenter ? 15 : 12}
                             options={mapOptions}
+                            onClick={() => setSelectedMarkerId(null)}
                         >
+                            {isLoadingResults && (
+                                <div className="homeLoadingOverlay" aria-live="polite">
+                                    <div className="loader"></div>
+                                    <p>Finding the best possible restaurants…</p>
+                                </div>
+                            )}
                             {searchResults.map((result) => (
-                                <Marker
+                                <AdvancedMarker
                                     key={result.fsq_place_id}
                                     position={{
                                         lat: result.latitude,
                                         lng: result.longitude,
                                     }}
+                                    selected={selectedMarkerId === result.fsq_place_id}
+                                    onSelect={() => handleMarkerSelect(result.fsq_place_id)}
                                 />
                             ))}
                         </GoogleMap>
@@ -292,6 +323,66 @@ const Home = () => {
             </div>
         </div>
     )
+}
+
+const AdvancedMarker = ({ position, selected, onSelect }) => {
+    const map = useGoogleMap()
+    const lat = position?.lat
+    const lng = position?.lng
+    const markerRef = useRef(null)
+    const onSelectRef = useRef(onSelect)
+
+    useEffect(() => {
+        onSelectRef.current = onSelect
+    }, [onSelect])
+
+    useEffect(() => {
+        if (
+            !map ||
+            lat == null ||
+            lng == null ||
+            !window.google?.maps?.marker?.AdvancedMarkerElement
+        ) {
+            return
+        }
+
+        const marker = new window.google.maps.marker.AdvancedMarkerElement({
+            map,
+            position: { lat, lng },
+        })
+
+        markerRef.current = marker
+
+        const clickListener = marker.addListener("gmp-click", () => {
+            onSelectRef.current?.()
+        })
+
+        return () => {
+            clickListener.remove()
+            marker.map = null
+            markerRef.current = null // set to null in case of memory leaks
+        }
+    }, [map, lat, lng])
+
+    useEffect(() => {
+        const marker = markerRef.current
+        const PinElement = window.google?.maps?.marker?.PinElement
+        if (!marker || !PinElement) {
+            return
+        }
+
+        const pin = new PinElement({
+            scale: selected ? 1.4 : 1,
+            background: selected ? "#FF5D5D" : "#AEE881",
+            borderColor: "#000",
+            glyphColor: "#000",
+        })
+
+        marker.content = pin.element
+        marker.zIndex = selected ? 2 : 1
+    }, [selected])
+
+    return null
 }
 
 export default Home;
