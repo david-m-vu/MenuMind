@@ -16,21 +16,7 @@ import InstagramIcon from "../../assets/icons/Instagram_Glyph_Gradient.svg"
 import { placeSearchFilteredJSON } from "../../data/foursquarePlaces/index.js";
 import { testDietaryProfile1 } from "../../data/dietaryProfile/index.js"
 
-// const tempData = {
-//     restaurants: [
-//         {
-//             // ... foursqaure places response
-
-//             // AI fils this in
-//             ds_score: 5, 
-//             reasons: {
-//                 positives: [],
-//                 negatives: [],
-//             }
-//         }
-//     ]
-// }
-
+// for testing - so that we don't have to call the API every time
 const tempResults = placeSearchFilteredJSON.results.map((result) => {
     return {
         ...result,
@@ -62,7 +48,7 @@ const Home = () => {
 
     const [searchResults, setSearchResults] = useState([])
     const [isLoadingResults, setIsLoadingResults] = useState(false)
-    const [geocodedLocation, setGeocodedLocation] = useState(null)
+    // const [geocodedLocation, setGeocodedLocation] = useState(null)
     const [selectedMarkerId, setSelectedMarkerId] = useState(null)
     const [isListView, setIsListView] = useState(false)
     const [isLandscapeLayout, setIsLandscapeLayout] = useState(() => {
@@ -76,6 +62,7 @@ const Home = () => {
     const headerRef = useRef(null)
     const searchContainerRef = useRef(null)
     const hasInitializedLocation = useRef(false) // ensure we only auto-fill location input once
+    const shouldSyncLocationInput = useRef(false) // track whether map center came from geolocation
     const hasSetInitialUserLocation = useRef(false) // ensure we only call setUserLocation once
 
     const selectedRestaurant = useMemo(
@@ -188,6 +175,7 @@ const Home = () => {
                 }
                 hasSetInitialUserLocation.current = true
                 const { latitude, longitude } = position.coords
+                shouldSyncLocationInput.current = true
                 setMapCenter({ lat: latitude, lng: longitude })
                 setGeoError(null)
             },
@@ -207,23 +195,25 @@ const Home = () => {
         return () => navigator.geolocation.clearWatch(watcher)
     }, [canUseGeolocation])
 
-    // sets address input to user's current location ON INITIALIZATION
+    // sets address input to user's current location when we auto-detect via geolocation
     useEffect(() => {
         if (hasInitializedLocation.current) return
         if (!mapCenter) return
+        if (!shouldSyncLocationInput.current) return
         // if (searchLocationInput.trim().length > 0) return
 
         const initializeAddress = async () => {
             try {
                 const geocodeData = await reverseGeocodeLocation(mapCenter)
                 if (geocodeData) {
-                    setGeocodedLocation(geocodeData)
+                    // setGeocodedLocation(geocodeData)
                     setSearchLocationInput(geocodeData.formattedAddress)
                 }
             } catch (error) {
                 console.error("Reverse geocoding failed:", error)
             } finally {
                 hasInitializedLocation.current = true
+                shouldSyncLocationInput.current = false
             }
         }
 
@@ -244,8 +234,9 @@ const Home = () => {
                 geocodeData = await geocodeLocation(searchLocationInput)
                 if (geocodeData) {
                     console.log("Geocoded:", geocodeData)
-                    setGeocodedLocation(geocodeData)
+                    // setGeocodedLocation(geocodeData)
                     // setSearchLocation(geocodeData.formattedAddress)
+                    shouldSyncLocationInput.current = false
                     setMapCenter(geocodeData.location)
                     console.log(geocodeData.location)
                 }
@@ -257,8 +248,9 @@ const Home = () => {
             try {
                 geocodeData = await reverseGeocodeLocation(mapCenter)
                 if (geocodeData) {
-                    setGeocodedLocation(geocodeData)
+                    // setGeocodedLocation(geocodeData)
                     setSearchLocationInput(geocodeData.formattedAddress)
+                    shouldSyncLocationInput.current = false
                     setMapCenter(geocodeData.location)
                     console.log("Reverse geocoded:", geocodeData)
                 }
