@@ -1,4 +1,4 @@
-export const getRecommendedRestaurants = async ({ query, coordinates, dietaryConditions = [], dietaryRestrictions = [], radius = 3000, limit = 10 } = {}) => {
+export const getRecommendedRestaurants = async ({ query, coordinates, dietaryConditions = [], dietaryRestrictions = [], radius = 3000, limit = 15 } = {}) => {
     if (!query?.trim()) {
         throw new Error("Query is required")
     }

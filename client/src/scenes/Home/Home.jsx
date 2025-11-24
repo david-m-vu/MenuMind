@@ -5,10 +5,13 @@ import { GoogleMap, useGoogleMap, useLoadScript } from "@react-google-maps/api"
 import { geocodeLocation, reverseGeocodeLocation } from "../../requests/geocode.js"
 import { getRecommendedRestaurants } from "../../requests/restaurant-recs.js"
 
+import RestaurantsListView from "./RestaurantsListView/RestaurantsListView.jsx"
 import TitleBanner from "../../components/TitleBanner/TitleBanner.jsx"
 import SearchIcon from "../../assets/icons/search-icon.svg";
 import ListIcon from "../../assets/icons/list-icon.svg";
 import MapIcon from "../../assets/icons/map-icon.svg";
+import WebsiteIcon from "../../assets/icons/www-icon.png"
+import InstagramIcon from "../../assets/icons/Instagram_Glyph_Gradient.svg"
 
 import { placeSearchFilteredJSON } from "../../data/foursquarePlaces/index.js";
 import { testDietaryProfile1 } from "../../data/dietaryProfile/index.js"
@@ -61,14 +64,17 @@ const Home = () => {
     const [isLoadingResults, setIsLoadingResults] = useState(false)
     const [geocodedLocation, setGeocodedLocation] = useState(null)
     const [selectedMarkerId, setSelectedMarkerId] = useState(null)
+    const [isListView, setIsListView] = useState(false)
     const [isLandscapeLayout, setIsLandscapeLayout] = useState(() => {
         if (typeof window === "undefined") {
             return false
         }
         return window.matchMedia("(orientation: landscape)").matches
     })
+    const [searchContainerHeight, setSearchContainerHeight] = useState(0)
 
     const headerRef = useRef(null)
+    const searchContainerRef = useRef(null)
     const hasInitializedLocation = useRef(false) // ensure we only auto-fill location input once
     const hasSetInitialUserLocation = useRef(false) // ensure we only call setUserLocation once
 
@@ -141,6 +147,30 @@ const Home = () => {
                     orientationMedia.removeListener(updateOrientation)
                 }
             }
+        }
+    }, [])
+
+    // keeps track of search container height so list view can sit below it
+    useEffect(() => {
+        const updateSearchContainerHeight = () => {
+            const height = searchContainerRef.current?.offsetHeight ?? 0
+            setSearchContainerHeight(height)
+        }
+
+        updateSearchContainerHeight()
+
+        // note: this only triggers when the window gets resized, not the search container
+        window.addEventListener("resize", updateSearchContainerHeight)
+
+        let resizeObserver // built in browser API that lets you watch an element itself - get notified when size hcanges
+        if (typeof ResizeObserver !== "undefined" && searchContainerRef.current) {
+            resizeObserver = new ResizeObserver(() => updateSearchContainerHeight())
+            resizeObserver.observe(searchContainerRef.current)
+        }
+
+        return () => {
+            window.removeEventListener("resize", updateSearchContainerHeight)
+            resizeObserver?.disconnect()
         }
     }, [])
 
@@ -241,33 +271,33 @@ const Home = () => {
 
         console.log(searchQueryInput, searchLocationInput)
 
-        // const coordinates = geocodeData?.location ?? mapCenter
-        // if (!coordinates) {
-        //     console.error("Unable to determine coordinates for recommendation search.")
-        //     return
-        // }
+        const coordinates = geocodeData?.location ?? mapCenter
+        if (!coordinates) {
+            console.error("Unable to determine coordinates for recommendation search.")
+            return
+        }
 
         // call restaurant-recs endpoint
         try {
             setIsLoadingResults(true)
-            // const { results } = await getRecommendedRestaurants({
-            //     query: searchQueryInput,
-            //     coordinates,
-            //     dietaryConditions: testDietaryProfile1.dietaryConditions,
-            //     dietaryRestrictions: testDietaryProfile1.dietaryRestrictions,
-            // })
-            // setSearchResults(results ?? [])
-            // console.log(results)
+            const { results } = await getRecommendedRestaurants({
+                query: searchQueryInput,
+                coordinates,
+                dietaryConditions: testDietaryProfile1.dietaryConditions,
+                dietaryRestrictions: testDietaryProfile1.dietaryRestrictions,
+            })
+            setSearchResults(results ?? [])
+            console.log(results)
         } catch (error) {
             console.error("Request to restaurant-recs failed:", error);
             return;
         } finally {
-            setTimeout(() => {
-                setSearchResults(tempResults)
-                setIsLoadingResults(false)
-            }, 2000)
+            // setTimeout(() => {
+            //     setSearchResults(tempResults)
+            //     setIsLoadingResults(false)
+            // }, 2000)
 
-            // setIsLoadingResults(false);
+            setIsLoadingResults(false);
 
         }
     }
@@ -294,6 +324,7 @@ const Home = () => {
 
             <div className="homeMapSection">
                 <form
+                    ref={searchContainerRef}
                     className="homeSearchContainer"
                     onSubmit={handleFormSubmit}
                     onKeyDown={handleFormKeyDown}
@@ -327,8 +358,14 @@ const Home = () => {
                                 onChange={(event) => setSearchLocationInput(event.target.value)}
                             />
                         </div>
-                        <div className="homeInputIconContainer">
-                            <img className="homeInputIcon" src={ListIcon} alt="list icon" />
+                        <div
+                            className={`homeInputIconContainer ${selectedMarkerId ? "homeInputIconContainer--docked" : ""}`}
+                            onClick={() => {
+                                setSelectedMarkerId(null);
+                                setIsListView((previous) => !previous)
+                            }}
+                        >
+                            <img className="homeInputIcon" src={isListView ? MapIcon : ListIcon} alt="toggle list view" />
                         </div>
                     </div>
 
@@ -366,9 +403,18 @@ const Home = () => {
                                     }}
                                     selected={selectedMarkerId === result.fsq_place_id}
                                     onSelect={() => handleMarkerSelect(result.fsq_place_id)}
+                                    score={result.fit_score}
                                 />
                             ))}
                         </GoogleMap>
+                    )}
+                    {isListView && (
+                        <RestaurantsListView
+                            results={searchResults}
+                            onSelect={(restaurantId) => handleMarkerSelect(restaurantId)}
+                            selectedId={selectedMarkerId}
+                            searchOffset={searchContainerHeight}
+                        />
                     )}
                     <RestaurantDetailsDrawer
                         restaurant={selectedRestaurant}
@@ -387,6 +433,9 @@ const RestaurantDetailsDrawer = ({ restaurant, isLandscape, onClose }) => {
         : null
     const positives = restaurant?.positives ?? []
     const negatives = restaurant?.negatives ?? []
+    const website = restaurant?.website
+    const instagramHandle = restaurant?.social_media?.instagram
+    const instagramUrl = instagramHandle ? `https://www.instagram.com/${instagramHandle}` : null
 
     const drawerClasses = [
         "homeDrawer",
@@ -414,13 +463,43 @@ const RestaurantDetailsDrawer = ({ restaurant, isLandscape, onClose }) => {
 
             {restaurant && (
                 <div className="homeDrawerContent">
-                    {restaurant.fit_score && (
-                        <div className="homeDrawerScore">Fit score: {restaurant.fit_score}/5</div>
+                    {(restaurant.fit_score || website || instagramUrl) && (
+                        <div className="homeDrawerScoreRow">
+                            {restaurant.fit_score && (
+                                <div className="homeDrawerScore">Fit score: {restaurant.fit_score}/5</div>
+                            )}
+                            {(website || instagramUrl) && (
+                                <div className="homeDrawerLinks">
+                                    {website && (
+                                        <a
+                                            className="homeDrawerLink"
+                                            href={website}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            <img className="homeDrawerLinkIcon" src={WebsiteIcon} alt="" />
+                                            <span>Website</span>
+                                        </a>
+                                    )}
+                                    {instagramUrl && (
+                                        <a
+                                            className="homeDrawerLink"
+                                            href={instagramUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            <img className="homeDrawerLinkIcon" src={InstagramIcon} alt="" />
+                                            <span>Instagram</span>
+                                        </a>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     {!!positives.length && (
                         <div className="homeDrawerSection">
-                            <p className="homeDrawerSectionTitle">Why it works:</p>
+                            <p className="homeDrawerSectionTitle">Why here?:</p>
                             <ul>
                                 {positives.map((positive, index) => (
                                     <li key={`positive-${index}`}>{positive}</li>
@@ -431,7 +510,7 @@ const RestaurantDetailsDrawer = ({ restaurant, isLandscape, onClose }) => {
 
                     {!!negatives.length && (
                         <div className="homeDrawerSection">
-                            <p className="homeDrawerSectionTitle">Consider:</p>
+                            <p className="homeDrawerSectionTitle">Things to Consider:</p>
                             <ul>
                                 {negatives.map((negative, index) => (
                                     <li key={`negative-${index}`}>{negative}</li>
@@ -442,7 +521,7 @@ const RestaurantDetailsDrawer = ({ restaurant, isLandscape, onClose }) => {
 
                     {restaurant.notes && (
                         <div className="homeDrawerSection">
-                            <p className="homeDrawerSectionTitle">Notes:</p>
+                            <p className="homeDrawerSectionTitle">Assumptions/Additional Notes:</p>
                             <p>{restaurant.notes}</p>
                         </div>
                     )}
@@ -455,17 +534,20 @@ const RestaurantDetailsDrawer = ({ restaurant, isLandscape, onClose }) => {
     )
 }
 
-const AdvancedMarker = ({ position, selected, onSelect }) => {
+const AdvancedMarker = ({ position, selected, onSelect, score }) => {
     const map = useGoogleMap()
     const lat = position?.lat
     const lng = position?.lng
     const markerRef = useRef(null)
     const onSelectRef = useRef(onSelect)
+    const markerElementRef = useRef(null)
+    const badgeElementRef = useRef(null)
 
     useEffect(() => {
         onSelectRef.current = onSelect
     }, [onSelect])
 
+    // creates the marker refs
     useEffect(() => {
         if (
             !map ||
@@ -481,7 +563,17 @@ const AdvancedMarker = ({ position, selected, onSelect }) => {
             position: { lat, lng },
         })
 
+        const markerElement = document.createElement("div")
+        markerElement.className = "homeMapMarker"
+        const badgeElement = document.createElement("div")
+        badgeElement.className = "homeMapMarkerBadge"
+        markerElement.appendChild(badgeElement)
+
+        marker.content = markerElement
+
         markerRef.current = marker
+        markerElementRef.current = markerElement
+        badgeElementRef.current = badgeElement
 
         const clickListener = marker.addListener("gmp-click", () => {
             onSelectRef.current?.()
@@ -491,26 +583,30 @@ const AdvancedMarker = ({ position, selected, onSelect }) => {
             clickListener.remove()
             marker.map = null
             markerRef.current = null // set to null in case of memory leaks
+            markerElementRef.current = null
+            badgeElementRef.current = null
         }
     }, [map, lat, lng])
 
+    // handle marker style when selected or score updates
     useEffect(() => {
         const marker = markerRef.current
-        const PinElement = window.google?.maps?.marker?.PinElement
-        if (!marker || !PinElement) {
+        const markerElement = markerElementRef.current
+        const badgeElement = badgeElementRef.current
+        if (!marker || !markerElement || !badgeElement) {
             return
         }
 
-        const pin = new PinElement({
-            scale: selected ? 1.4 : 1,
-            background: selected ? "#FF5D5D" : "#AEE881",
-            borderColor: "#000",
-            glyphColor: "#000",
-        })
+        const scoreLabel = Number.isFinite(score)
+            ? Number(score).toFixed(1)
+            : "•"
 
-        marker.content = pin.element
-        marker.zIndex = selected ? 2 : 1
-    }, [selected])
+        badgeElement.textContent = scoreLabel
+        
+        markerElement.classList.toggle("homeMapMarker--selected", Boolean(selected))
+        badgeElement.classList.toggle("homeMapMarkerBadge--selected", Boolean(selected))
+        marker.zIndex = selected ? 20 : 10
+    }, [selected, score])
 
     return null
 }
