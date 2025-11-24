@@ -7,6 +7,8 @@ import { getRecommendedRestaurants } from "../../requests/restaurant-recs.js"
 
 import TitleBanner from "../../components/TitleBanner/TitleBanner.jsx"
 import SearchIcon from "../../assets/icons/search-icon.svg";
+import ListIcon from "../../assets/icons/list-icon.svg";
+import MapIcon from "../../assets/icons/map-icon.svg";
 
 import { placeSearchFilteredJSON } from "../../data/foursquarePlaces/index.js";
 import { testDietaryProfile1 } from "../../data/dietaryProfile/index.js"
@@ -54,21 +56,26 @@ const Home = () => {
     ) // pass a function so that it evaluates only on the first render
     const [searchQueryInput, setSearchQueryInput] = useState("")
     const [searchLocationInput, setSearchLocationInput] = useState("")
-    
+
     const [searchResults, setSearchResults] = useState([])
     const [isLoadingResults, setIsLoadingResults] = useState(false)
     const [geocodedLocation, setGeocodedLocation] = useState(null)
     const [selectedMarkerId, setSelectedMarkerId] = useState(null)
-    
+    const [isLandscapeLayout, setIsLandscapeLayout] = useState(() => {
+        if (typeof window === "undefined") {
+            return false
+        }
+        return window.matchMedia("(orientation: landscape)").matches
+    })
+
     const headerRef = useRef(null)
     const hasInitializedLocation = useRef(false) // ensure we only auto-fill location input once
     const hasSetInitialUserLocation = useRef(false) // ensure we only call setUserLocation once
-    
-    // useLoadScript is a helper that loads the Google Maps JS API asynchronously for you, injecting API key/libraries
-    const { isLoaded, loadError } = useLoadScript({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-        libraries,
-    })
+
+    const selectedRestaurant = useMemo(
+        () => searchResults.find((result) => result.fsq_place_id === selectedMarkerId) ?? null,
+        [searchResults, selectedMarkerId]
+    )
 
     // use useMemo so that mapCenter doesn't get recomputed on rerender leading to a different reference, affecting GoogleMap since it's passed in as a prop
     const fallbackCenter = useMemo(
@@ -88,6 +95,12 @@ const Home = () => {
         [mapId]
     )
 
+    // useLoadScript is a helper that loads the Google Maps JS API asynchronously for you, injecting API key/libraries
+    const { isLoaded, loadError } = useLoadScript({
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+        libraries,
+    })
+
     // sets map view positioning on resize
     useEffect(() => {
         const updateMapHeight = () => {
@@ -101,8 +114,34 @@ const Home = () => {
         }
 
         updateMapHeight()
+
+        const orientationMedia = typeof window !== "undefined"
+            ? window.matchMedia("(orientation: landscape)")
+            : null
+
+        const updateOrientation = (event) => setIsLandscapeLayout(event.matches)
+
+        if (orientationMedia) {
+            setIsLandscapeLayout(orientationMedia.matches)
+            if (orientationMedia.addEventListener) { // invoke updateOrientation whenever the media query status changes
+                orientationMedia.addEventListener("change", updateOrientation)
+            } else {
+                orientationMedia.addListener(updateOrientation) // backwards compatibility
+            }
+        }
+
         window.addEventListener("resize", updateMapHeight) // updates map height on resize
-        return () => window.removeEventListener("resize", updateMapHeight)
+
+        return () => {
+            window.removeEventListener("resize", updateMapHeight)
+            if (orientationMedia) {
+                if (orientationMedia.removeEventListener) {
+                    orientationMedia.removeEventListener("change", updateOrientation)
+                } else {
+                    orientationMedia.removeListener(updateOrientation)
+                }
+            }
+        }
     }, [])
 
     // handles asking for user's location
@@ -226,8 +265,10 @@ const Home = () => {
             setTimeout(() => {
                 setSearchResults(tempResults)
                 setIsLoadingResults(false)
-            }, 5000)
-          
+            }, 2000)
+
+            // setIsLoadingResults(false);
+
         }
     }
 
@@ -239,6 +280,10 @@ const Home = () => {
 
     const handleMarkerSelect = (markerId) => {
         setSelectedMarkerId((current) => (current === markerId ? null : markerId))
+    }
+
+    const handleCloseSelectedRestaurant = () => {
+        setSelectedMarkerId(null)
     }
 
     return (
@@ -254,35 +299,41 @@ const Home = () => {
                     onKeyDown={handleFormKeyDown}
                 >
                     <div className="homeSearchInputs">
-                        <label htmlFor="home-search" className="srOnly">Search for restaurants</label>
-                        <div className="homeSearchInputContainer">
-                            <button type="submit" className="homeSubmitButton">
-                                <img className="searchIcon" src={SearchIcon} alt="search icon" />
-                            </button>
+                        <div className="homeSearchTextInputs">
+                            <label htmlFor="home-search" className="srOnly">Search for restaurants</label>
+                            <div className="homeSearchInputContainer">
+                                <button type="submit" className="homeSubmitButton">
+                                    <img className="searchIcon" src={SearchIcon} alt="search icon" />
+                                </button>
+                                <input
+                                    id="home-search"
+                                    type="text"
+                                    className="homeSearchInput"
+                                    placeholder="What are you in the mood for?"
+                                    aria-label="Search for restaurants"
+                                    value={searchQueryInput}
+                                    onChange={(event) => setSearchQueryInput(event.target.value)}
+                                />
+
+                            </div>
+                            <label htmlFor="home-location" className="srOnly">Enter a location</label>
                             <input
-                                id="home-search"
+                                id="home-location"
                                 type="text"
-                                className="homeSearchInput"
-                                placeholder="What are you in the mood for?"
-                                aria-label="Search for restaurants"
-                                value={searchQueryInput}
-                                onChange={(event) => setSearchQueryInput(event.target.value)}
+                                className="homeLocationInput"
+                                placeholder="City or address"
+                                aria-label="City or address"
+                                value={searchLocationInput}
+                                onChange={(event) => setSearchLocationInput(event.target.value)}
                             />
-                            
                         </div>
-                        <label htmlFor="home-location" className="srOnly">Enter a location</label>
-                        <input
-                            id="home-location"
-                            type="text"
-                            className="homeLocationInput"
-                            placeholder="City or address"
-                            aria-label="City or address"
-                            value={searchLocationInput}
-                            onChange={(event) => setSearchLocationInput(event.target.value)}
-                        />
+                        <div className="homeInputIconContainer">
+                            <img className="homeInputIcon" src={ListIcon} alt="list icon" />
+                        </div>
                     </div>
+
                 </form>
-                
+
                 <div className="homeMapContainer" style={{ height: `${mapHeight}px` }}>
                     {loadError ? (
                         <p className="homeMapStatus">Unable to load map.</p>
@@ -298,7 +349,7 @@ const Home = () => {
                             center={mapCenter ?? fallbackCenter}
                             zoom={mapCenter ? 15 : 12}
                             options={mapOptions}
-                            onClick={() => setSelectedMarkerId(null)}
+                            onClick={handleCloseSelectedRestaurant}
                         >
                             {isLoadingResults && (
                                 <div className="homeLoadingOverlay" aria-live="polite">
@@ -319,8 +370,87 @@ const Home = () => {
                             ))}
                         </GoogleMap>
                     )}
+                    <RestaurantDetailsDrawer
+                        restaurant={selectedRestaurant}
+                        isLandscape={isLandscapeLayout}
+                        onClose={handleCloseSelectedRestaurant}
+                    />
                 </div>
             </div>
+        </div>
+    )
+}
+
+const RestaurantDetailsDrawer = ({ restaurant, isLandscape, onClose }) => {
+    const categoryNames = restaurant?.categories
+        ? restaurant.categories.map((category) => category.name).join(", ")
+        : null
+    const positives = restaurant?.positives ?? []
+    const negatives = restaurant?.negatives ?? []
+
+    const drawerClasses = [
+        "homeDrawer",
+        restaurant ? "homeDrawer--visible" : "", // render nothing if passed-in restaurant is null 
+        isLandscape ? "homeDrawer--landscape" : "",
+    ]
+        .filter(Boolean)
+        .join(" ")
+
+    return (
+        <div className={drawerClasses} aria-hidden={!restaurant}>
+            <div className="homeDrawerHeader">
+                <div>
+                    {/* need these two nullish checks because theres a point when restaurant details disappear while it slides back out of the screen (selectedRestaurant becomes null) */}
+                    <p className="homeDrawerEyebrow">{categoryNames ?? "Restaurant"}</p>
+                    <h3 className="homeDrawerTitle">{restaurant?.name ?? "Select a place"}</h3>
+                    <p className="homeDrawerAddress">
+                        {restaurant?.location?.formatted_address ?? restaurant?.location?.address ?? ""}
+                    </p>
+                </div>
+                <button className="homeDrawerCloseButton" type="button" onClick={onClose} aria-label="Close details">
+                    ×
+                </button>
+            </div>
+
+            {restaurant && (
+                <div className="homeDrawerContent">
+                    {restaurant.fit_score && (
+                        <div className="homeDrawerScore">Fit score: {restaurant.fit_score}/5</div>
+                    )}
+
+                    {!!positives.length && (
+                        <div className="homeDrawerSection">
+                            <p className="homeDrawerSectionTitle">Why it works:</p>
+                            <ul>
+                                {positives.map((positive, index) => (
+                                    <li key={`positive-${index}`}>{positive}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {!!negatives.length && (
+                        <div className="homeDrawerSection">
+                            <p className="homeDrawerSectionTitle">Consider:</p>
+                            <ul>
+                                {negatives.map((negative, index) => (
+                                    <li key={`negative-${index}`}>{negative}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {restaurant.notes && (
+                        <div className="homeDrawerSection">
+                            <p className="homeDrawerSectionTitle">Notes:</p>
+                            <p>{restaurant.notes}</p>
+                        </div>
+                    )}
+                    {restaurant.categories?.[0]?.icon && (
+                        <img className="homeDrawerIcon" src={`${restaurant.categories[0].icon.prefix}88${restaurant.categories[0].icon.suffix}`} alt="" />
+                    )}
+                </div>
+            )}
         </div>
     )
 }
