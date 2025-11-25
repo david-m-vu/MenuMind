@@ -25,9 +25,8 @@ const RestaurantsListView = ({ results, searchOffset = 0 }) => {
                     const instagramUrl = instagramHandle ? `https://www.instagram.com/${instagramHandle}` : null
 
                     return (
-                    <button
+                    <div
                         key={restaurant.fsq_place_id}
-                        type="button"
                         className="homeListCard"
                     >
                         <div className="homeListEyebrow">
@@ -112,7 +111,7 @@ const RestaurantsListView = ({ results, searchOffset = 0 }) => {
                             {restaurant.notes && <p className="homeListNotes">{restaurant.notes}</p>}
                         </div>
 
-                    </button>
+                    </div>
                 )})
             )}
         </div>

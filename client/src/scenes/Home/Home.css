@@ -92,6 +92,16 @@
     font-weight: 600;
     color: #111827;
     pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(6px);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+}
+
+.homeSearchResultsCount--visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
 }
 
 .srOnly {

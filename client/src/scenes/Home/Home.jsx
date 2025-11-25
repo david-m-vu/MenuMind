@@ -48,6 +48,7 @@ const Home = ({user}) => {
     const [searchResults, setSearchResults] = useState([])
     const [isLoadingResults, setIsLoadingResults] = useState(false)
     const [hasFetchedResults, setHasFetchedResults] = useState(false)
+    const [shouldRenderResultsCount, setShouldRenderResultsCount] = useState(false)
     // const [geocodedLocation, setGeocodedLocation] = useState(null)
     const [selectedMarkerId, setSelectedMarkerId] = useState(null)
     const [isListView, setIsListView] = useState(false)
@@ -293,6 +294,7 @@ const Home = ({user}) => {
                 dietaryRestrictions: user.dietaryRestrictions,
             })
             setSearchResults(results ?? [])
+            setShouldRenderResultsCount(true)
             setHasFetchedResults(true)
             console.log(results)
         } catch (error) {
@@ -322,6 +324,14 @@ const Home = ({user}) => {
     const handleCloseSelectedRestaurant = () => {
         setSelectedMarkerId(null)
     }
+
+    const isResultsCountVisible = hasFetchedResults && !isLoadingResults
+    const resultsCountClasses = [
+        "homeSearchResultsCount",
+        isResultsCountVisible ? "homeSearchResultsCount--visible" : null,
+    ]
+        .filter(Boolean)
+        .join(" ")
 
     return (
         <div className="homeScreen">
@@ -364,8 +374,12 @@ const Home = ({user}) => {
                                 value={searchLocationInput}
                                 onChange={(event) => setSearchLocationInput(event.target.value)}
                             />
-                            {hasFetchedResults && !isLoadingResults && (
-                                <p className="homeSearchResultsCount" aria-live="polite">
+                            {shouldRenderResultsCount && (
+                                <p
+                                    className={resultsCountClasses}
+                                    aria-live="polite"
+                                    aria-hidden={!isResultsCountVisible}
+                                >
                                     {`${searchResults.length} ${searchResults.length === 1 ? "restaurant" : "restaurants"} found`}
                                 </p>
                             )}
