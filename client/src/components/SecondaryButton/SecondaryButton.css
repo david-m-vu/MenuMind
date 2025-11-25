@@ -1,0 +1,22 @@
+.secondaryButton {
+    border-radius: 30px;
+    background-color: #C6ECAE;
+    padding: 8px 38px;
+    font-size: 2rem;
+    border: none;
+    color: #11642d;
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+    transition: transform 200ms ease, box-shadow 200ms ease,
+        background-color 200ms ease;
+    text-wrap: nowrap;
+}
+
+.secondaryButton:hover,
+.secondaryButton:focus-visible {
+    cursor: pointer;
+    background-color: #b8f1a0;
+}
+
+.secondaryButton:active {
+    transform: translateY(1px);
+}

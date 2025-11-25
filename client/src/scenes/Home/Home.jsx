@@ -14,7 +14,8 @@ import WebsiteIcon from "../../assets/icons/www-icon.png"
 import InstagramIcon from "../../assets/icons/Instagram_Glyph_Gradient.svg"
 
 import { placeSearchFilteredJSON } from "../../data/foursquarePlaces/index.js";
-import { testDietaryProfile1 } from "../../data/dietaryProfile/index.js"
+// import { testDietaryProfile1 } from "../../data/dietaryProfile/index.js"
+// Jake: I commented this out as I stored the user in App.jsx
 
 // for testing - so that we don't have to call the API every time
 const tempResults = placeSearchFilteredJSON.results.map((result) => {
@@ -35,7 +36,10 @@ const tempResults = placeSearchFilteredJSON.results.map((result) => {
 
 const libraries = ["marker"]
 
-const Home = () => {
+const Home = ({user}) => {
+
+    const testDietaryProfile1 = user; //Jake: CHANGE THIS, I added this so ur code doesn't break.
+
     const canUseGeolocation = typeof window !== "undefined" && "geolocation" in navigator
 
     const [mapCenter, setMapCenter] = useState(null)
@@ -261,7 +265,7 @@ const Home = () => {
         }
 
 
-        console.log(searchQueryInput, searchLocationInput)
+        console.log(searchQueryInput, searchLocationInput, testDietaryProfile1.dietaryConditions)
 
         const coordinates = geocodeData?.location ?? mapCenter
         if (!coordinates) {

@@ -7,6 +7,7 @@ import Home from './scenes/Home/Home.jsx';
 import Profile from "./scenes/Profile/Profile.jsx";
 import Camera from "./scenes/Camera/Camera.jsx";
 import Navbar from "./components/Navbar/Navbar.jsx";
+import { useState } from "react";
 
 const WithNavbarLayout = () => {
   return (
@@ -20,13 +21,19 @@ const WithNavbarLayout = () => {
 }
 
 function App() {
+
+  const [userProfile, setUserProfile] = useState({
+    dietaryRestrictions: [],
+    dietaryConditions: []
+  });
+
   return (
     <>
       <Routes>
         <Route path="/" element={<Landing/>} />
-        <Route path="/onboarding" element={<Onboarding/>}/>
+        <Route path="/onboarding" element={<Onboarding userProfile={userProfile} setUserProfile={setUserProfile} />}/>
         <Route path="/" element={<WithNavbarLayout />}>
-          <Route path="/home" element={<Home/>}/>
+          <Route path="/home" element={<Home user={userProfile} />}/>
           <Route path="/camera" element={<Camera/>}/>
           <Route path="/profile" element={<Profile/>}/>
         </Route>
