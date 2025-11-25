@@ -8,6 +8,7 @@ To get started:
 - fill out the environment variables in the .envs
     - for /client/.env, you'll need your own Google Maps API key and Map ID
         - https://developers.google.com/maps
+        - for the Map ID, choose the Vector option instead of Raster
     - for /server/.env, you'll need to grab the Rea.gent API key from the team noggin and you'll also need your own Foursquare API key
         - https://rea.gent/noggins/soviet-pony-3508/edit
         - https://foursquare.com/developers/home

@@ -7,11 +7,6 @@ import SecondaryButton from "../../components/SecondaryButton/SecondaryButton";
 
 
 const Step1 = ({conditions, setConditions}) => {
-
-    const navigate = useNavigate();
-    const handleSubmit = () => {
-        navigate("/home")
-    }
     const options = [
     { value: 'crohns', label: "Crohn's Disease" },
     { value: 'uc', label: 'Ulcerative Colitis' },

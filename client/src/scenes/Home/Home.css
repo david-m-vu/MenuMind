@@ -35,10 +35,12 @@
 }
 
 .homeSearchTextInputs {
+    position: relative;
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
     flex: 1 1 320px;
+    padding-bottom: 2.25rem;
 }
 
 .homeSearchInputContainer {
@@ -75,6 +77,21 @@
 .homeLocationInput:focus-visible {
     outline: 2px solid rgba(0, 0, 0, 0.4);
     outline-offset: 2px;
+}
+
+.homeSearchResultsCount {
+    position: absolute;
+    bottom: -0.5rem;
+    left: 0;
+    margin: 0;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(231, 250, 219, 0.7);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #111827;
+    pointer-events: none;
 }
 
 .srOnly {

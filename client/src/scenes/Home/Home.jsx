@@ -14,8 +14,6 @@ import WebsiteIcon from "../../assets/icons/www-icon.png"
 import InstagramIcon from "../../assets/icons/Instagram_Glyph_Gradient.svg"
 
 import { placeSearchFilteredJSON } from "../../data/foursquarePlaces/index.js";
-// import { testDietaryProfile1 } from "../../data/dietaryProfile/index.js"
-// Jake: I commented this out as I stored the user in App.jsx
 
 // for testing - so that we don't have to call the API every time
 const tempResults = placeSearchFilteredJSON.results.map((result) => {
@@ -37,9 +35,6 @@ const tempResults = placeSearchFilteredJSON.results.map((result) => {
 const libraries = ["marker"]
 
 const Home = ({user}) => {
-
-    const testDietaryProfile1 = user; //Jake: CHANGE THIS, I added this so ur code doesn't break.
-
     const canUseGeolocation = typeof window !== "undefined" && "geolocation" in navigator
 
     const [mapCenter, setMapCenter] = useState(null)
@@ -52,6 +47,7 @@ const Home = ({user}) => {
 
     const [searchResults, setSearchResults] = useState([])
     const [isLoadingResults, setIsLoadingResults] = useState(false)
+    const [hasFetchedResults, setHasFetchedResults] = useState(false)
     // const [geocodedLocation, setGeocodedLocation] = useState(null)
     const [selectedMarkerId, setSelectedMarkerId] = useState(null)
     const [isListView, setIsListView] = useState(false)
@@ -165,6 +161,19 @@ const Home = ({user}) => {
         }
     }, [])
 
+    // to make the number of search results only show for 2.5 seconds
+    useEffect(() => {
+        if (!hasFetchedResults) {
+            return
+        }
+
+        const timeoutId = setTimeout(() => {
+            setHasFetchedResults(false)
+        }, 2500)
+
+        return () => clearTimeout(timeoutId)
+    }, [hasFetchedResults])
+
     // handles asking for user's location
     useEffect(() => {
         if (!canUseGeolocation) {
@@ -265,7 +274,7 @@ const Home = ({user}) => {
         }
 
 
-        console.log(searchQueryInput, searchLocationInput, testDietaryProfile1.dietaryConditions)
+        console.log(searchQueryInput, searchLocationInput, user.dietaryConditions, user.dietaryRestrictions)
 
         const coordinates = geocodeData?.location ?? mapCenter
         if (!coordinates) {
@@ -275,14 +284,16 @@ const Home = ({user}) => {
 
         // call restaurant-recs endpoint
         try {
+            setHasFetchedResults(false)
             setIsLoadingResults(true)
             const { results } = await getRecommendedRestaurants({
                 query: searchQueryInput,
                 coordinates,
-                dietaryConditions: testDietaryProfile1.dietaryConditions,
-                dietaryRestrictions: testDietaryProfile1.dietaryRestrictions,
+                dietaryConditions: user.dietaryConditions,
+                dietaryRestrictions: user.dietaryRestrictions,
             })
             setSearchResults(results ?? [])
+            setHasFetchedResults(true)
             console.log(results)
         } catch (error) {
             console.error("Request to restaurant-recs failed:", error);
@@ -353,6 +364,11 @@ const Home = ({user}) => {
                                 value={searchLocationInput}
                                 onChange={(event) => setSearchLocationInput(event.target.value)}
                             />
+                            {hasFetchedResults && !isLoadingResults && (
+                                <p className="homeSearchResultsCount" aria-live="polite">
+                                    {`${searchResults.length} ${searchResults.length === 1 ? "restaurant" : "restaurants"} found`}
+                                </p>
+                            )}
                         </div>
                         <div
                             className={`homeInputIconContainer ${selectedMarkerId ? "homeInputIconContainer--docked" : ""}`}

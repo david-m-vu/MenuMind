@@ -106,6 +106,10 @@ const getRecommendedRestaurants = async (req, res, next) => {
             return res.status(status).json({ error: message })
         }
 
+        if (foursquareRes.results.length === 0) {
+            return res.status(200).json({ results: [] })
+        }
+
         const recommendedRestaurants = await curateFoursquarePlaces(foursquareRes.results, query, dietaryConditions, dietaryRestrictions);
 
         res.status(200).json({
