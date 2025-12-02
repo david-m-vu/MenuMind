@@ -1,0 +1,109 @@
+.profileScreen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.profileContent {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.profileCard {
+  width: 320px;
+  background: #fff;
+  padding: 18px;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.profileCard--flat {
+  background: transparent;
+  box-shadow: none;
+  padding: 8px 6px;
+}
+
+.profileCard h2 {
+  margin: 0 0 12px 0;
+  background: var(--primary);
+  padding: 12px;
+  border-radius: 4px;
+  color: #0b3f1c;
+}
+
+.profileEmail {
+  margin: 18px 0 24px 0;
+  color: #0b3f1c;
+  font-size: 1.4rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.profileActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profileActions .primaryButton {
+  width: 100%;
+  text-align: center;
+  padding: 12px 18px;
+  box-sizing: border-box;
+}
+
+.fullWidthInput {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  box-sizing: border-box;
+}
+
+.dangerButton {
+  background: #ff6b6b;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+}
+
+.dangerButton:hover {
+  cursor: pointer;
+  filter: brightness(0.95);
+}
+
+/* Responsive: on wider screens center a narrower card with more spacing */
+@media (min-width: 900px) {
+  .profileContent {
+    padding: 40px 0;
+  }
+  .profileCard {
+    width: 520px;
+    padding: 36px;
+    border-radius: 10px;
+  }
+  .profileCard h2 {
+    font-size: 1.5rem;
+    padding: 14px;
+  }
+  .profileActions {
+    gap: 16px;
+  }
+  .primaryButton,
+  .dangerButton {
+    font-size: 1.25rem;
+    padding: 14px 28px;
+    border-radius: 30px;
+  }
+}
+
+/* Landscape: place card to the left and keep content visible */
+@media (orientation: landscape) and (min-width: 800px) {
+  .profileContent {
+    align-items: center;
+  }
+}
