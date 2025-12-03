@@ -6,6 +6,8 @@ import Onboarding from "./scenes/Onboarding/Onboarding.jsx";
 import Home from "./scenes/Home/Home.jsx";
 import Profile from "./scenes/Profile/Profile.jsx";
 import Camera from "./scenes/Camera/Camera.jsx";
+import ImageSelection from "./scenes/Camera/ImageSelection.jsx";
+import MenuInfo from "./scenes/Camera/MenuInfo.jsx";
 import Navbar from "./components/Navbar/Navbar.jsx";
 import Settings from "./scenes/Profile/Settings.jsx";
 import ResetPassword from "./scenes/Profile/ResetPassword.jsx";
@@ -45,6 +47,8 @@ function App() {
         <Route path="/" element={<WithNavbarLayout />}>
           <Route path="/home" element={<Home user={userProfile} />} />
           <Route path="/camera" element={<Camera />} />
+          <Route path="/camera/menu-info" element={<MenuInfo />} />
+          <Route path="/camera/upload" element={<ImageSelection />} />
           <Route
             path="/profile"
             element={

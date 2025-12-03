@@ -17,7 +17,13 @@ const Navbar = () => {
     const navigate = useNavigate()
     const location = useLocation()
 
-    const isActive = (curPath) => location.pathname.startsWith(curPath)
+    const isActive = (item) => {
+        const curPath = `/${item.id}`
+        if (location.pathname.startsWith(curPath)) return true
+        // treat image-selection as part of camera flow so camera stays active
+        if (item.id === 'camera' && location.pathname.startsWith('/image-selection')) return true
+        return false
+    }
     
     return (
         <nav className="Navbar">
@@ -25,7 +31,7 @@ const Navbar = () => {
                 <button
                     key={item.id}
                     type="button"
-                    className={`navbarItem ${isActive(`/${item.id}`) ? "is-active" : ""}`}
+                    className={`navbarItem ${isActive(item) ? "is-active" : ""}`}
                     aria-label={item.label}
                     onClick={() => navigate(`/${item.id}`)}
                 >
