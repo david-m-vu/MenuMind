@@ -30,6 +30,7 @@ function App() {
     dietaryRestrictions: [],
     dietaryConditions: [],
   });
+  const [searchResults, setSearchResults] = useState([])
 
   return (
     <>
@@ -45,7 +46,7 @@ function App() {
           }
         />
         <Route path="/" element={<WithNavbarLayout />}>
-          <Route path="/home" element={<Home user={userProfile} />} />
+          <Route path="/home" element={<Home user={userProfile} searchResults={searchResults} setSearchResults={setSearchResults}/>} />
           <Route path="/camera" element={<Camera />} />
           <Route path="/camera/menu-info" element={<MenuInfo />} />
           <Route path="/camera/upload" element={<ImageSelection />} />
@@ -55,6 +56,7 @@ function App() {
               <Profile
                 userProfile={userProfile}
                 setUserProfile={setUserProfile}
+                setSearchResults={setSearchResults}
               />
             }
           />

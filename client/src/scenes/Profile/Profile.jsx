@@ -4,7 +4,7 @@ import TitleBanner from "../../components/TitleBanner/TitleBanner.jsx";
 import PrimaryButton from "../../components/PrimaryButton/PrimaryButton";
 import { useNavigate } from "react-router-dom";
 
-const Profile = ({ userProfile = {}, setUserProfile }) => {
+const Profile = ({ userProfile = {}, setUserProfile, setSearchResults }) => {
   const navigate = useNavigate();
 
   const email = userProfile?.email || "john@berkeley.edu";
@@ -19,6 +19,7 @@ const Profile = ({ userProfile = {}, setUserProfile }) => {
     if (typeof setUserProfile === "function") {
       setUserProfile({ dietaryRestrictions: [], dietaryConditions: [] });
     }
+    setSearchResults([]);
     navigate("/");
   };
 
