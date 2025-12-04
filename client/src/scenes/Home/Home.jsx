@@ -34,7 +34,7 @@ const tempResults = placeSearchFilteredJSON.results.map((result) => {
 
 const libraries = ["marker"]
 
-const Home = ({user}) => {
+const Home = ({user, searchResults, setSearchResults}) => {
     const canUseGeolocation = typeof window !== "undefined" && "geolocation" in navigator
 
     const [mapCenter, setMapCenter] = useState(null)
@@ -45,7 +45,6 @@ const Home = ({user}) => {
     const [searchQueryInput, setSearchQueryInput] = useState("")
     const [searchLocationInput, setSearchLocationInput] = useState("")
 
-    const [searchResults, setSearchResults] = useState([])
     const [isLoadingResults, setIsLoadingResults] = useState(false)
     const [hasFetchedResults, setHasFetchedResults] = useState(false)
     const [shouldRenderResultsCount, setShouldRenderResultsCount] = useState(false)
