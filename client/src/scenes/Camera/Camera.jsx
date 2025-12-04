@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom"
 import "./Camera.css"
 import ReverseCameraIcon from "../../assets/icons/reverse-camera.svg"
 
-const Camera = () => {
+const Camera = ({ useTestMode = false }) => {
     const videoRef = useRef(null)
     const canvasRef = useRef(null)
     const headerRef = useRef(null)
@@ -24,6 +24,20 @@ const Camera = () => {
     }, [location])
 
     useEffect(() => {
+        // If running in test mode, don't start camera streams; show sample image instead
+        if (useTestMode) {
+            setHasMultipleCameras(false)
+            const updateCameraHeight = () => {
+                const headerHeight = headerRef.current?.offsetHeight ?? 0
+                const navbarHeight = document.querySelector('.Navbar')?.offsetHeight ?? 0
+                const available = window.innerHeight - headerHeight - navbarHeight
+                setCameraHeight(Math.max(available, 200))
+            }
+            updateCameraHeight()
+            window.addEventListener('resize', updateCameraHeight)
+            return () => window.removeEventListener('resize', updateCameraHeight)
+        }
+
         // detect if multiple video inputs are available
         const detectDevices = async () => {
             try {
@@ -65,11 +79,19 @@ const Camera = () => {
             }
             window.removeEventListener('resize', updateCameraHeight)
         }
-    }, [facingMode])
+    }, [facingMode, useTestMode])
 
     const takePhoto = () => {
         const video = videoRef.current
         const canvas = canvasRef.current
+        if (useTestMode) {
+            // use sample image instead of actual camera frame
+            const sample = new URL('../../assets/pictures/sample-menu.jpg', import.meta.url).href
+            setCapturedImage(sample)
+            navigate('/camera/menu-info', { state: { image: sample } })
+            return
+        }
+
         if (!video || !canvas) return
         canvas.width = video.videoWidth
         canvas.height = video.videoHeight
@@ -77,7 +99,6 @@ const Camera = () => {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
         const data = canvas.toDataURL('image/png')
         setCapturedImage(data)
-        
         navigate('/camera/menu-info', { state: { image: data } })
     }
 
@@ -86,6 +107,10 @@ const Camera = () => {
     }
 
     const handleUploadClick = () => {
+        if (useTestMode) {
+            return
+        }
+
         if (stream) {
             try {
                 stream.getTracks().forEach(t => t.stop())
@@ -104,7 +129,14 @@ const Camera = () => {
             <div className="cameraContainer" style={{ height: cameraHeight ? `${cameraHeight}px` : undefined }}>
                 <div className="cameraViewport">
                     {!capturedImage && (
-                        <video ref={videoRef} autoPlay playsInline muted className="cameraVideo" />
+                                                useTestMode ? (
+                                                        <>
+                                                            <img src={new URL('../../assets/pictures/sample-menu.jpg', import.meta.url).href} alt="sample" className="capturedPreview" />
+                                                            <div className="testModeBadge">In Test Mode</div>
+                                                        </>
+                        ) : (
+                            <video ref={videoRef} autoPlay playsInline muted className="cameraVideo" />
+                        )
                     )}
 
                     {capturedImage && (
