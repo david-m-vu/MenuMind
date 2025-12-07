@@ -8,6 +8,8 @@ const MenuInfo = ({ usePlaceholder = false }) => {
   const navigate = useNavigate()
   const image = location.state?.image ?? null
   const userProfile = location.state?.userProfile ?? { dietaryRestrictions: [], dietaryConditions: [] }
+  const aiResult = location.state.aiResult
+
 
   // Placeholder data for testing/demo mode
   const placeholderRecommended = [
@@ -21,6 +23,10 @@ const MenuInfo = ({ usePlaceholder = false }) => {
     { name: 'Spicy Buffalo Wings', reason: 'High spice level' },
     { name: 'Shellfish Paella', reason: 'Contains shellfish allergen' },
   ]
+
+  const recommendations = aiResult.recommendations
+  const avoid = aiResult.avoid
+  const confidence = aiResult.confidence
 
   useEffect(() => {
     if (!image) {
@@ -44,8 +50,8 @@ const MenuInfo = ({ usePlaceholder = false }) => {
 
   if (!image) return null
 
-  const recommendedItems = usePlaceholder ? placeholderRecommended : []
-  const riskyItems = usePlaceholder ? placeholderRisky : []
+  const recommendedItems = usePlaceholder ? placeholderRecommended : recommendations
+  const riskyItems = usePlaceholder ? placeholderRisky : avoid
 
   return (
     <div className="menuInfoScene">
@@ -58,6 +64,10 @@ const MenuInfo = ({ usePlaceholder = false }) => {
 
         {usePlaceholder && (
           <div className="placeholderBadge">Using Placeholder Data</div>
+        )}
+
+        {confidence && (
+          <div className="placeholderBadge">Image Confidence: {confidence}</div>
         )}
 
         {(recommendedItems.length > 0 || riskyItems.length > 0) && (

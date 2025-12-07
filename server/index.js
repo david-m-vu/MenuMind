@@ -3,8 +3,9 @@ const express = require("express")
 const morgan = require("morgan");
 const cors = require("cors")
 require("dotenv").config()
-
+const menuRoutes = require("./routes/analyzeMenu")
 const restaurantRecsRouter = require("./routes/restaurant-recs")
+
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -37,7 +38,8 @@ app.use(
         credentials: true,
     })
 )
-app.use(express.json())
+app.use(express.json({ limit: "15mb" }))
+app.use(express.urlencoded({ limit: "15mb", extended: true }))
 app.use(morgan("common"));
 // app.use(bodyParser.json({ limit: "30mb", extended: true }))
 // app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
@@ -51,6 +53,7 @@ app.get("/health", (_req, res) => {
 })
 
 app.use("/api/restaurant-recs", restaurantRecsRouter)
+app.use("/api/analyze-menu", menuRoutes)
 
 // catch-all for routes that didn't match
 app.use((req, res) => {
