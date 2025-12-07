@@ -47,9 +47,9 @@ function App() {
         />
         <Route path="/" element={<WithNavbarLayout />}>
         <Route path="/home" element={<Home user={userProfile} searchResults={searchResults} setSearchResults={setSearchResults}/>} />
-          <Route path="/camera" element={<Camera useTestMode={true} />} />
-          <Route path="/camera/menu-info" element={<MenuInfo />} />
-          <Route path="/camera/upload" element={<ImageSelection />} />
+          <Route path="/camera" element={<Camera useTestMode={true} userProfile={userProfile} />} />
+          <Route path="/camera/menu-info" element={<MenuInfo usePlaceholder={true} />} />
+          <Route path="/camera/upload" element={<ImageSelection userProfile={userProfile} />} />
           <Route
             path="/profile"
             element={

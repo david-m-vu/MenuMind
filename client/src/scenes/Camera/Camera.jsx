@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom"
 import "./Camera.css"
 import ReverseCameraIcon from "../../assets/icons/reverse-camera.svg"
 
-const Camera = ({ useTestMode = false }) => {
+const Camera = ({ useTestMode = false, userProfile = { dietaryRestrictions: [], dietaryConditions: [] } }) => {
     const videoRef = useRef(null)
     const canvasRef = useRef(null)
     const headerRef = useRef(null)
@@ -88,7 +88,7 @@ const Camera = ({ useTestMode = false }) => {
             // use sample image instead of actual camera frame
             const sample = new URL('../../assets/pictures/sample-menu.jpg', import.meta.url).href
             setCapturedImage(sample)
-            navigate('/camera/menu-info', { state: { image: sample } })
+            navigate('/camera/menu-info', { state: { image: sample, userProfile } })
             return
         }
 
@@ -99,7 +99,7 @@ const Camera = ({ useTestMode = false }) => {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
         const data = canvas.toDataURL('image/png')
         setCapturedImage(data)
-        navigate('/camera/menu-info', { state: { image: data } })
+        navigate('/camera/menu-info', { state: { image: data, userProfile } })
     }
 
     const handleFlip = () => {
@@ -118,7 +118,7 @@ const Camera = ({ useTestMode = false }) => {
                 console.warn('Error stopping stream before upload navigation', e)
             }
         }
-        navigate('/camera/upload', { state: { fromCamera: true } })
+        navigate('/camera/upload', { state: { fromCamera: true, userProfile } })
     }
 
     return (

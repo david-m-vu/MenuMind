@@ -5,11 +5,14 @@ import TitleBanner from '../../components/TitleBanner/TitleBanner.jsx'
 
 // REFERENCE: Step 5 of: https://sandydev.medium.com/how-to-make-a-text-recognition-from-image-project-using-react-56dc00c84ee4
 
-const ImageSelection = () => {
+const ImageSelection = ({ userProfile = { dietaryRestrictions: [], dietaryConditions: [] } }) => {
   const [selectedImage, setSelectedImage] = useState(null)
   const fileInputRef = useRef(null)
   const navigate = useNavigate()
   const location = useLocation()
+  
+  // Get userProfile from navigation state (passed from Camera) or use prop
+  const profileToUse = location.state?.userProfile || userProfile
 
   const handleImageChange = (e) => {
     const imageFile = e?.target?.files && e.target.files[0]
@@ -53,7 +56,7 @@ const ImageSelection = () => {
 
   const handleImageUpload = () => {
     if (!selectedImage) return
-    navigate('/camera/menu-info', { state: { image: selectedImage} })
+    navigate('/camera/menu-info', { state: { image: selectedImage, userProfile: profileToUse } })
   }
 
   return (

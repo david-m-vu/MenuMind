@@ -3,22 +3,36 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import TitleBanner from '../../components/TitleBanner/TitleBanner.jsx'
 import './MenuInfo.css'
 
-const MenuInfo = () => {
+const MenuInfo = ({ usePlaceholder = false }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const image = location.state?.image ?? null
-  const tempText = `Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco 
-  laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
-  Sed ut perspiciatis unde omnis iste natus error sit 
-  voluptatem accusantium doloremque laudantium, totam rem aperiam, 
-  eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
-  `
+  const userProfile = location.state?.userProfile ?? { dietaryRestrictions: [], dietaryConditions: [] }
+
+  // Placeholder data for testing/demo mode
+  const placeholderRecommended = [
+    { name: 'Grilled Salmon Salad', reason: 'High in omega-3, gluten-free' },
+    { name: 'Quinoa Buddha Bowl', reason: 'Plant-based, nutrient-rich' },
+    { name: 'Chicken & Veggie Stir-Fry', reason: 'Low dairy, customizable' },
+  ]
+
+  const placeholderRisky = [
+    { name: 'Creamy Pasta Carbonara', reason: 'Contains dairy, gluten' },
+    { name: 'Spicy Buffalo Wings', reason: 'High spice level' },
+    { name: 'Shellfish Paella', reason: 'Contains shellfish allergen' },
+  ]
 
   useEffect(() => {
     if (!image) {
       navigate('/camera')
     }
   }, [image, navigate])
+
+  useEffect(() => {
+    console.log('User Profile:', userProfile)
+    console.log('Dietary Restrictions:', userProfile.dietaryRestrictions)
+    console.log('Dietary Conditions:', userProfile.dietaryConditions)
+  }, [userProfile])
 
   const handleRetake = () => {
     navigate('/camera')
@@ -30,6 +44,9 @@ const MenuInfo = () => {
 
   if (!image) return null
 
+  const recommendedItems = usePlaceholder ? placeholderRecommended : []
+  const riskyItems = usePlaceholder ? placeholderRisky : []
+
   return (
     <div className="menuInfoScene">
       <TitleBanner />
@@ -38,8 +55,54 @@ const MenuInfo = () => {
         <div className="menuInfoPreviewWrap">
           <img src={image} alt="menu preview" className="menuInfoPreviewImage" />
         </div>
-        <h2 className="menuInfoPreviewTitle">Information</h2>
-        <p className="menuInfoText">{tempText}</p>
+
+        {usePlaceholder && (
+          <div className="placeholderBadge">Using Placeholder Data</div>
+        )}
+
+        {(recommendedItems.length > 0 || riskyItems.length > 0) && (
+          <div className="menuInfoRecommendations">
+            {recommendedItems.length > 0 && (
+              <div className="recommendationSection">
+                <h3 className="sectionTitle sectionTitle--recommended">Recommended Items</h3>
+                <ul className="itemList">
+                  {recommendedItems.map((item, idx) => (
+                    <li key={idx} className="menuItem">
+                      <span className="itemMarker itemMarker--green"></span>
+                      <div className="itemDetails">
+                        <span className="itemName">{item.name}</span>
+                        <span className="itemReason">{item.reason}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {riskyItems.length > 0 && (
+              <div className="recommendationSection">
+                <h3 className="sectionTitle sectionTitle--risky">Risky Items</h3>
+                <ul className="itemList">
+                  {riskyItems.map((item, idx) => (
+                    <li key={idx} className="menuItem">
+                      <span className="itemMarker itemMarker--red"></span>
+                      <div className="itemDetails">
+                        <span className="itemName">{item.name}</span>
+                        <span className="itemReason">{item.reason}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!usePlaceholder && recommendedItems.length === 0 && riskyItems.length === 0 && (
+          <div className="noRecommendations">
+            <p>AI analysis will appear here after processing...</p>
+          </div>
+        )}
       </div>
 
       <div className="menuInfoActions">
