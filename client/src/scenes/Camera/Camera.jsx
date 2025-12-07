@@ -84,14 +84,16 @@ const Camera = ({ useTestMode = false, userProfile = { dietaryRestrictions: [], 
     const takePhoto = () => {
         const video = videoRef.current
         const canvas = canvasRef.current
+        // USETESTMODE PARAMETER LOGIC
         if (useTestMode) {
-            // use sample image instead of actual camera frame
+            
             const sample = new URL('../../assets/pictures/sample-menu.jpg', import.meta.url).href
             setCapturedImage(sample)
             navigate('/camera/menu-info', { state: { image: sample, userProfile } })
             return
         }
 
+        // REGULAR CAMERA LOGIC
         if (!video || !canvas) return
         canvas.width = video.videoWidth
         canvas.height = video.videoHeight

@@ -209,6 +209,40 @@
   border: 1px dashed #ddd;
 }
 
+.loadingContainer {
+  margin-top: 24px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.progressBarWrapper {
+  width: 100%;
+  max-width: 400px;
+  height: 6px;
+  background: #e6e6e6;
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #1976d2, #42a5f5);
+  transition: width 0.3s ease;
+  border-radius: 3px;
+  box-shadow: 0 0 8px rgba(25, 118, 210, 0.3);
+}
+
+.loadingText {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+  margin: 0;
+}
+
 .menuInfoActions {
   position: relative;
   right: 16px;

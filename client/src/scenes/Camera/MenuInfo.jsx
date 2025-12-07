@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import TitleBanner from '../../components/TitleBanner/TitleBanner.jsx'
 import './MenuInfo.css'
@@ -8,8 +8,10 @@ const MenuInfo = ({ usePlaceholder = false }) => {
   const navigate = useNavigate()
   const image = location.state?.image ?? null
   const userProfile = location.state?.userProfile ?? { dietaryRestrictions: [], dietaryConditions: [] }
-  const aiResult = location.state.aiResult
-
+  const aiResult = location.state?.aiResult ?? { recommendations: [], avoid: [], confidence: null }
+  
+  const [isLoading, setIsLoading] = useState(false)
+  const [progress, setProgress] = useState(0)
 
   // Placeholder data for testing/demo mode
   const placeholderRecommended = [
@@ -24,9 +26,9 @@ const MenuInfo = ({ usePlaceholder = false }) => {
     { name: 'Shellfish Paella', reason: 'Contains shellfish allergen' },
   ]
 
-  const recommendations = aiResult.recommendations
-  const avoid = aiResult.avoid
-  const confidence = aiResult.confidence
+  const recommendations = aiResult.recommendations ?? []
+  const avoid = aiResult.avoid ?? []
+  const confidence = aiResult.confidence ?? null
 
   useEffect(() => {
     if (!image) {
@@ -34,11 +36,38 @@ const MenuInfo = ({ usePlaceholder = false }) => {
     }
   }, [image, navigate])
 
+  // FOR TESTING: Show user profile info
   useEffect(() => {
     console.log('User Profile:', userProfile)
     console.log('Dietary Restrictions:', userProfile.dietaryRestrictions)
     console.log('Dietary Conditions:', userProfile.dietaryConditions)
   }, [userProfile])
+
+  // Loading bar
+  useEffect(() => {
+    if (!usePlaceholder && !aiResult.recommendations?.length && !aiResult.avoid?.length) {
+      setIsLoading(true)
+      setProgress(10)
+      
+      const progressIntervals = [
+        { time: 500, value: 25 },
+        { time: 1500, value: 50 },
+        { time: 2500, value: 75 },
+        { time: 3500, value: 90 },
+      ]
+      
+      const timeouts = progressIntervals.map(interval => 
+        setTimeout(() => setProgress(interval.value), interval.time)
+      )
+      
+      return () => {
+        timeouts.forEach(timeout => clearTimeout(timeout))
+      }
+    } else if (aiResult.recommendations?.length || aiResult.avoid?.length) {
+      setIsLoading(false)
+      setProgress(100)
+    }
+  }, [usePlaceholder, aiResult])
 
   const handleRetake = () => {
     navigate('/camera')
@@ -64,6 +93,15 @@ const MenuInfo = ({ usePlaceholder = false }) => {
 
         {usePlaceholder && (
           <div className="placeholderBadge">Using Placeholder Data</div>
+        )}
+
+        {isLoading && (
+          <div className="loadingContainer">
+            <div className="progressBarWrapper">
+              <div className="progressBar" style={{ width: `${progress}%` }}></div>
+            </div>
+            <p className="loadingText">Analyzing menu... {progress}%</p>
+          </div>
         )}
 
         {confidence && (
@@ -110,7 +148,7 @@ const MenuInfo = ({ usePlaceholder = false }) => {
 
         {!usePlaceholder && recommendedItems.length === 0 && riskyItems.length === 0 && (
           <div className="noRecommendations">
-            <p>AI analysis will appear here after processing...</p>
+            <p>Loading recommendations...</p>
           </div>
         )}
       </div>
