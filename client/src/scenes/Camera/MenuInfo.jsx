@@ -21,23 +21,24 @@ const MenuInfo = ({ usePlaceholder = false }) => {
   const [error, setError] = useState(null)
 
   // Placeholder data for testing/demo mode
-  const placeholderRecommended = [
-    { name: 'Grilled Salmon Salad', reason: 'High in omega-3, gluten-free' },
-    { name: 'Quinoa Buddha Bowl', reason: 'Plant-based, nutrient-rich' },
-    { name: 'Chicken & Veggie Stir-Fry', reason: 'Low dairy, customizable' },
-  ]
+  // const placeholderRecommended = [
+  //   { name: 'Grilled Salmon Salad', reason: 'High in omega-3, gluten-free' },
+  //   { name: 'Quinoa Buddha Bowl', reason: 'Plant-based, nutrient-rich' },
+  //   { name: 'Chicken & Veggie Stir-Fry', reason: 'Low dairy, customizable' },
+  // ]
 
-  const placeholderRisky = [
-    { name: 'Creamy Pasta Carbonara', reason: 'Contains dairy, gluten' },
-    { name: 'Spicy Buffalo Wings', reason: 'High spice level' },
-    { name: 'Shellfish Paella', reason: 'Contains shellfish allergen' },
-  ]
+  // const placeholderRisky = [
+  //   { name: 'Creamy Pasta Carbonara', reason: 'Contains dairy, gluten' },
+  //   { name: 'Spicy Buffalo Wings', reason: 'High spice level' },
+  //   { name: 'Shellfish Paella', reason: 'Contains shellfish allergen' },
+  // ]
+  const placeholderRecommended = [{name: 'Unable to load recommendations', reason: ''}]
+  const placeholderRisky = [{name: 'Unable to load risky items', reason: ''}]
 
   // Use recommendations/avoid if present, else fallback to menuItems/itemScores
   const recommendations = aiResult.recommendations ?? aiResult.menuItems ?? [];
   const avoid = aiResult.avoid ?? aiResult.itemScores ?? [];
   const confidence = aiResult.confidence ?? null;
-  console.log('AI Result:', aiResult)
 
   // // Raw AI data for filtering in MenuInfo
   // const menuItems = aiResult.menuItems ?? []
