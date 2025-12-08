@@ -59,41 +59,20 @@ const ImageSelection = ({ userProfile = { dietaryRestrictions: [], dietaryCondit
   const handleDragOver = (e) => e.preventDefault()
 
   const handleImageUpload = async () => {
-    if (!selectedImage) return
+    if (!selectedImage) return;
 
-    const blob = await fetch(selectedImage).then(r => r.blob())
-    const base64 = await new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onloadend = () => resolve(reader.result)
-    reader.onerror = reject
-    reader.readAsDataURL(blob)
-  })
-    setIsLoadingResults(true)
-    
-      const url = new URL(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/analyze-menu`)
-
-      const response = await fetch(url.toString(), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          image: base64,                                   
-          conditions: profileToUse.dietaryConditions,      
-          restrictions: profileToUse.dietaryRestrictions 
-        }),
-      })
-
-    const aiResult = await response.json()
-    setIsLoadingResults(false)
-    if(aiResult.confidence != "error"){
-      setError(false)
-      navigate('/camera/menu-info', { state: { image: selectedImage, userProfile: profileToUse, aiResult: aiResult} })
-    }else {
-      setError(true)
-      setSelectedImage(null)
+    // If the image is a blob URL (image saved locally), convert to base64
+    let imageToSend = selectedImage;
+    if (selectedImage.startsWith('blob:')) {
+      const blob = await fetch(selectedImage).then(r => r.blob());
+      imageToSend = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
     }
-    
+    navigate('/camera/menu-info', { state: { image: imageToSend, userProfile: profileToUse, fetchAI: true } });
   }
 
   return (

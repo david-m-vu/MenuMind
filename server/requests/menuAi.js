@@ -1,3 +1,5 @@
+// MAY BE DEPRECATED
+
 const axios = require("axios");
 async function callMenuAI(image, conditions, restrictions) {
   const response = await fetch(

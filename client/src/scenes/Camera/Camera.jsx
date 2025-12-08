@@ -101,7 +101,15 @@ const Camera = ({ useTestMode = false, userProfile = { dietaryRestrictions: [], 
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
         const data = canvas.toDataURL('image/png')
         setCapturedImage(data)
-        navigate('/camera/menu-info', { state: { image: data, userProfile } })
+        
+        // Navigate to MenuInfo with flag to trigger API call
+        navigate('/camera/menu-info', { 
+            state: { 
+                image: data, 
+                userProfile,
+                fetchAI: true 
+            } 
+        })
     }
 
     const handleFlip = () => {

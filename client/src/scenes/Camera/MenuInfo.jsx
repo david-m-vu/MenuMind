@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import TitleBanner from '../../components/TitleBanner/TitleBanner.jsx'
+import { analyzeMenuImage } from '../../requests/menu-analysis.js'
 import './MenuInfo.css'
 
 const MenuInfo = ({ usePlaceholder = false }) => {
@@ -8,10 +9,16 @@ const MenuInfo = ({ usePlaceholder = false }) => {
   const navigate = useNavigate()
   const image = location.state?.image ?? null
   const userProfile = location.state?.userProfile ?? { dietaryRestrictions: [], dietaryConditions: [] }
-  const aiResult = location.state?.aiResult ?? { recommendations: [], avoid: [], confidence: null }
+  const fetchAI = location.state?.fetchAI ?? false
   
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [aiResult, setAiResult] = useState(location.state?.aiResult ?? { 
+    menuItems: [], 
+    itemScores: [], 
+    itemCriteria: [] 
+  })
+  const [error, setError] = useState(null)
 
   // Placeholder data for testing/demo mode
   const placeholderRecommended = [
@@ -30,6 +37,11 @@ const MenuInfo = ({ usePlaceholder = false }) => {
   const avoid = aiResult.avoid ?? []
   const confidence = aiResult.confidence ?? null
 
+  // Raw AI data for filtering in MenuInfo
+  const menuItems = aiResult.menuItems ?? []
+  const itemScores = aiResult.itemScores ?? []
+  const itemCriteria = aiResult.itemCriteria ?? []
+
   useEffect(() => {
     if (!image) {
       navigate('/camera')
@@ -43,12 +55,52 @@ const MenuInfo = ({ usePlaceholder = false }) => {
     console.log('Dietary Conditions:', userProfile.dietaryConditions)
   }, [userProfile])
 
-  // Loading bar
+  // Fetch AI analysis when instructed
   useEffect(() => {
-    if (!usePlaceholder && !aiResult.recommendations?.length && !aiResult.avoid?.length) {
-      setIsLoading(true)
-      setProgress(10)
+    if (fetchAI && image && !usePlaceholder) {
+      const fetchAnalysis = async () => {
+        setIsLoading(true)
+        setProgress(10)
+        setError(null)
+        
+        // Create timeout promise
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Analysis timeout')), 20000)
+        )
+        
+        try {
+          const resultPromise = analyzeMenuImage(
+            image,
+            userProfile.dietaryConditions,
+            userProfile.dietaryRestrictions,
+            true // useOCR = true for Tesseract
+          )
+          
+          // Race between the API call and timeout
+          const result = await Promise.race([resultPromise, timeoutPromise])
+          
+          setProgress(100)
+          setAiResult(result)
+          setIsLoading(false)
+        } catch (err) {
+          console.error('Failed to analyze menu:', err)
+          setIsLoading(false)
+          setError('Failed to load recommendations')
+          setAiResult({
+            menuItems: [],
+            itemScores: [],
+            itemCriteria: [],
+          })
+        }
+      }
       
+      fetchAnalysis()
+    }
+  }, [fetchAI, image, userProfile, usePlaceholder])
+
+  // Loading bar (simulated progress while waiting for API)
+  useEffect(() => {
+    if (isLoading) {
       const progressIntervals = [
         { time: 500, value: 25 },
         { time: 1500, value: 50 },
@@ -57,17 +109,18 @@ const MenuInfo = ({ usePlaceholder = false }) => {
       ]
       
       const timeouts = progressIntervals.map(interval => 
-        setTimeout(() => setProgress(interval.value), interval.time)
+        setTimeout(() => {
+          if (progress < interval.value) {
+            setProgress(interval.value)
+          }
+        }, interval.time)
       )
       
       return () => {
         timeouts.forEach(timeout => clearTimeout(timeout))
       }
-    } else if (aiResult.recommendations?.length || aiResult.avoid?.length) {
-      setIsLoading(false)
-      setProgress(100)
     }
-  }, [usePlaceholder, aiResult])
+  }, [isLoading, progress])
 
   const handleRetake = () => {
     navigate('/camera')
@@ -95,60 +148,18 @@ const MenuInfo = ({ usePlaceholder = false }) => {
           <div className="placeholderBadge">Using Placeholder Data</div>
         )}
 
-        {isLoading && (
+        {isLoading && !error && (
           <div className="loadingContainer">
             <div className="progressBarWrapper">
               <div className="progressBar" style={{ width: `${progress}%` }}></div>
             </div>
-            <p className="loadingText">Analyzing menu... {progress}%</p>
+            <p className="loadingText">Loading recommendations... {progress}%</p>
           </div>
         )}
 
-        {confidence && (
-          <div className="placeholderBadge">Image Confidence: {confidence}</div>
-        )}
-
-        {(recommendedItems.length > 0 || riskyItems.length > 0) && (
-          <div className="menuInfoRecommendations">
-            {recommendedItems.length > 0 && (
-              <div className="recommendationSection">
-                <h3 className="sectionTitle sectionTitle--recommended">Recommended Items</h3>
-                <ul className="itemList">
-                  {recommendedItems.map((item, idx) => (
-                    <li key={idx} className="menuItem">
-                      <span className="itemMarker itemMarker--green"></span>
-                      <div className="itemDetails">
-                        <span className="itemName">{item.name}</span>
-                        <span className="itemReason">{item.reason}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {riskyItems.length > 0 && (
-              <div className="recommendationSection">
-                <h3 className="sectionTitle sectionTitle--risky">Risky Items</h3>
-                <ul className="itemList">
-                  {riskyItems.map((item, idx) => (
-                    <li key={idx} className="menuItem">
-                      <span className="itemMarker itemMarker--red"></span>
-                      <div className="itemDetails">
-                        <span className="itemName">{item.name}</span>
-                        <span className="itemReason">{item.reason}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-
-        {!usePlaceholder && recommendedItems.length === 0 && riskyItems.length === 0 && (
-          <div className="noRecommendations">
-            <p>Loading recommendations...</p>
+        {!usePlaceholder && !isLoading && recommendedItems.length === 0 && riskyItems.length === 0 && (
+          <div className={error ? "noRecommendations noRecommendations--error" : "noRecommendations"}>
+            <p>{error || 'No recommendations found.'}</p>
           </div>
         )}
       </div>
