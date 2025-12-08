@@ -1,7 +1,7 @@
-const express = require("express")
+const { Router } = require("express")
 const { analyzeMenuController } = require("../controllers/menu-analysis")
 
-const router = express.Router()
+const router = Router()
 
 router.post("/", analyzeMenuController)
 

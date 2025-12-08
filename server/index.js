@@ -3,7 +3,7 @@ const express = require("express")
 const morgan = require("morgan");
 const cors = require("cors")
 require("dotenv").config()
-const menuRoutes = require("./routes/analyzeMenu")
+const menuRouter = require("./routes/analyze-menu")
 const restaurantRecsRouter = require("./routes/restaurant-recs")
 
 
@@ -53,7 +53,7 @@ app.get("/health", (_req, res) => {
 })
 
 app.use("/api/restaurant-recs", restaurantRecsRouter)
-app.use("/api/analyze-menu", menuRoutes)
+app.use("/api/analyze-menu", menuRouter)
 
 // catch-all for routes that didn't match
 app.use((req, res) => {

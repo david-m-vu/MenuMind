@@ -1,4 +1,5 @@
 const axios = require("axios");
+const { createWorker } = require('tesseract.js')
 
 /*
  * This function is responsible for stripping out the fields in foursquarePlaces that aren't useful to the AI,
@@ -107,6 +108,76 @@ const curateFoursquarePlaces = async (foursquarePlaces, query, dietaryConditions
     return combinedRecommendations;
 }
 
+const curateMenuRecs = async (imageData, dietaryConditions, dietaryRestrictions) => {
+    
+    let rawText = ""
+    const worker = await createWorker('eng');
+    try {
+        console.log("Processing image with OCR...");
+        const { data } = await worker.recognize(imageData);
+        rawText = data.text;
+        console.log("OCR extracted text length:", rawText.length);
+        console.log("OCR raw text preview:", rawText.substring(0, 200));
+    } catch (error) {
+        console.error("Tesseract OCR failed:", error.message);
+        throw new Error("Failed to extract text from menu image");
+    } finally {
+        await worker.terminate();
+    }
+    
+    // Clean up the extracted text
+    const cleanedText = rawText
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\n')
+    
+    console.log("Cleaned text preview:", cleanedText.substring(0, 200))
+    
+    // Parse menu items from cleaned text and send to AI for analysis
+    let aiRecommendations = null
+    try {
+        const aiResponse = await axios.post(
+            "https://noggin.rea.gent/incredible-vicuna-3261",
+            {
+                menuText: cleanedText,
+                conditions: dietaryConditions,
+                restrictions: dietaryRestrictions,
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.REAGENT_API_KEY_CAMERA}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        )
+        
+        aiRecommendations = aiResponse.data
+        if (typeof aiRecommendations === "string") {
+            try {
+                aiRecommendations = JSON.parse(aiRecommendations)
+            } catch (parseError) {
+                console.warn("Unable to parse AI recommendations JSON:", parseError)
+                aiRecommendations = { raw: aiRecommendations }
+            }
+        }
+    } catch (error) {
+        console.error("ReAgent request failed:", error.response?.data ?? error.message)
+        aiRecommendations = {
+            error: "Failed to generate AI recommendations.",
+            details: error.response?.data ?? null,
+        }
+    }
+    
+    return {
+        rawText: cleanedText,
+        menuItems: aiRecommendations?.menuItems || [],
+        itemScores: aiRecommendations?.itemScores || [],
+        itemCriteria: aiRecommendations?.itemCriteria || [],
+    }
+}
+
 module.exports = {
-    curateFoursquarePlaces
+    curateFoursquarePlaces,
+    curateMenuRecs
 }
