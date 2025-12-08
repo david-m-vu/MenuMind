@@ -1,6 +1,6 @@
 // Menu analysis API requests
 
-const API_BASE_URL = import.meta.env.VITE_BASE_URL
+const API_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL
 /**
  * Analyze menu image using OCR + AI
  * @param {string} imageData - Base64 encoded image or image URL

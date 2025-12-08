@@ -8,7 +8,7 @@ export const getRecommendedRestaurants = async ({ query, coordinates, dietaryCon
         throw new Error("Valid latitude and longitude are required")
     }
 
-    const url = new URL(`${import.meta.env.VITE_BASE_URL}/api/restaurant-recs`)
+    const url = new URL(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/restaurant-recs`)
     url.searchParams.set("query", query)
     url.searchParams.set("lat", lat)
     url.searchParams.set("lng", lng)
