@@ -33,14 +33,14 @@ const MenuInfo = ({ usePlaceholder = false }) => {
     { name: 'Shellfish Paella', reason: 'Contains shellfish allergen' },
   ]
 
-  const recommendations = aiResult.recommendations ?? []
-  const avoid = aiResult.avoid ?? []
-  const confidence = aiResult.confidence ?? null
+  // Use recommendations/avoid if present, else fallback to menuItems/itemScores
+  const recommendations = aiResult.recommendations ?? aiResult.menuItems ?? [];
+  const avoid = aiResult.avoid ?? aiResult.itemScores ?? [];
+  const confidence = aiResult.confidence ?? null;
+  console.log('AI Result:', aiResult)
 
-  // Raw AI data for filtering in MenuInfo
-  const menuItems = aiResult.menuItems ?? []
-  const itemScores = aiResult.itemScores ?? []
-  const itemCriteria = aiResult.itemCriteria ?? []
+  // // Raw AI data for filtering in MenuInfo
+  // const menuItems = aiResult.menuItems ?? []
 
   useEffect(() => {
     if (!image) {
@@ -73,7 +73,7 @@ const MenuInfo = ({ usePlaceholder = false }) => {
             image,
             userProfile.dietaryConditions,
             userProfile.dietaryRestrictions,
-            true // useOCR = true for Tesseract
+            false
           )
           
           // Race between the API call and timeout
@@ -126,10 +126,6 @@ const MenuInfo = ({ usePlaceholder = false }) => {
     navigate('/camera')
   }
 
-  const handleSubmit = () => {
-    navigate('/home')
-  }
-
   if (!image) return null
 
   const recommendedItems = usePlaceholder ? placeholderRecommended : recommendations
@@ -138,6 +134,7 @@ const MenuInfo = ({ usePlaceholder = false }) => {
   return (
     <div className="menuInfoScene">
       <TitleBanner />
+
       <div className="menuInfoContent">
         <h2 className="menuInfoPreviewTitle">Preview</h2>
         <div className="menuInfoPreviewWrap">
@@ -148,12 +145,54 @@ const MenuInfo = ({ usePlaceholder = false }) => {
           <div className="placeholderBadge">Using Placeholder Data</div>
         )}
 
-        {isLoading && !error && (
+        {isLoading && (
           <div className="loadingContainer">
             <div className="progressBarWrapper">
               <div className="progressBar" style={{ width: `${progress}%` }}></div>
             </div>
-            <p className="loadingText">Loading recommendations... {progress}%</p>
+            <p className="loadingText">Analyzing menu... {progress}%</p>
+          </div>
+        )}
+
+        {confidence && (
+          <div className="placeholderBadge">Image Confidence: {confidence}</div>
+        )}
+
+        {(recommendedItems.length > 0 || riskyItems.length > 0) && (
+          <div className="menuInfoRecommendations">
+            {recommendedItems.length > 0 && (
+              <div className="recommendationSection">
+                <h3 className="sectionTitle sectionTitle--recommended">Recommended Items</h3>
+                <ul className="itemList">
+                  {recommendedItems.map((item, idx) => (
+                    <li key={idx} className="menuItem">
+                      <span className="itemMarker itemMarker--green"></span>
+                      <div className="itemDetails">
+                        <span className="itemName">{item.name}</span>
+                        <span className="itemReason">{item.reason}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {riskyItems.length > 0 && (
+              <div className="recommendationSection">
+                <h3 className="sectionTitle sectionTitle--risky">Risky Items</h3>
+                <ul className="itemList">
+                  {riskyItems.map((item, idx) => (
+                    <li key={idx} className="menuItem">
+                      <span className="itemMarker itemMarker--red"></span>
+                      <div className="itemDetails">
+                        <span className="itemName">{item.name}</span>
+                        <span className="itemReason">{item.reason}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
@@ -165,8 +204,7 @@ const MenuInfo = ({ usePlaceholder = false }) => {
       </div>
 
       <div className="menuInfoActions">
-        <button className="menuInfoRetake" onClick={handleRetake}>Retake</button>
-        <button className="menuInfoSubmit" onClick={handleSubmit}>Submit</button>
+        <button className="menuInfoRetake" onClick={handleRetake}>Take Another Photo</button>
       </div>
     </div>
   )

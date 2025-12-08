@@ -108,76 +108,56 @@ const curateFoursquarePlaces = async (foursquarePlaces, query, dietaryConditions
     return combinedRecommendations;
 }
 
-const curateMenuRecs = async (imageData, dietaryConditions, dietaryRestrictions) => {
-    
-    let rawText = ""
-    const worker = await createWorker('eng');
-    try {
-        console.log("Processing image with OCR...");
-        const { data } = await worker.recognize(imageData);
-        rawText = data.text;
-        console.log("OCR extracted text length:", rawText.length);
-        console.log("OCR raw text preview:", rawText.substring(0, 200));
-    } catch (error) {
-        console.error("Tesseract OCR failed:", error.message);
-        throw new Error("Failed to extract text from menu image");
-    } finally {
-        await worker.terminate();
-    }
-    
-    // Clean up the extracted text
-    const cleanedText = rawText
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0)
-        .join('\n')
-    
-    console.log("Cleaned text preview:", cleanedText.substring(0, 200))
-    
-    // Parse menu items from cleaned text and send to AI for analysis
-    let aiRecommendations = null
-    try {
-        const aiResponse = await axios.post(
-            "https://noggin.rea.gent/incredible-vicuna-3261",
-            {
-                menuText: cleanedText,
-                conditions: dietaryConditions,
-                restrictions: dietaryRestrictions,
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${process.env.REAGENT_API_KEY_CAMERA}`,
-                    "Content-Type": "application/json",
-                },
-            }
-        )
-        
-        aiRecommendations = aiResponse.data
-        if (typeof aiRecommendations === "string") {
-            try {
-                aiRecommendations = JSON.parse(aiRecommendations)
-            } catch (parseError) {
-                console.warn("Unable to parse AI recommendations JSON:", parseError)
-                aiRecommendations = { raw: aiRecommendations }
-            }
+// Unified menu analysis: direct image->AI (default) or image->OCR->AI
+const { callMenuAI } = require('./menuAi');
+const { callMenuAIFromText } = require('./menuAiFromText');
+
+/**
+ * Analyze menu image using either direct image->AI (default) or OCR->AI pipeline.
+ * @param {string} imageData - Base64 image or image URL
+ * @param {Array} dietaryConditions
+ * @param {Array} dietaryRestrictions
+ * @param {Object} options - { useOCR: boolean }
+ * @returns {Promise<Object>} AI result
+ */
+const analyzeMenuImageUnified = async (imageData, dietaryConditions, dietaryRestrictions, options = {useOCR: false}) => {
+    const useOCR = options.useOCR || false;
+    if (!useOCR) {
+        // Direct image->AI (default)
+        return await callMenuAI(imageData, dietaryConditions, dietaryRestrictions);
+    } else {
+        // OCR->AI pipeline
+        let rawText = "";
+        const worker = await createWorker('eng');
+        try {
+            console.log("Processing image with OCR...");
+            const { data } = await worker.recognize(imageData);
+            rawText = data.text;
+            console.log("OCR extracted text length:", rawText.length);
+            console.log("OCR raw text preview:", rawText.substring(0, 200));
+        } catch (error) {
+            console.error("Tesseract OCR failed:", error.message);
+            throw new Error("Failed to extract text from menu image");
+        } finally {
+            await worker.terminate();
         }
-    } catch (error) {
-        console.error("ReAgent request failed:", error.response?.data ?? error.message)
-        aiRecommendations = {
-            error: "Failed to generate AI recommendations.",
-            details: error.response?.data ?? null,
-        }
+        // Clean up the extracted text
+        const cleanedText = rawText
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .join('\n');
+        console.log("Cleaned text preview:", cleanedText.substring(0, 200));
+        // Use menuAiFromText for AI call
+        const aiResult = await callMenuAIFromText(cleanedText, dietaryConditions, dietaryRestrictions);
+        return {
+            rawText: cleanedText,
+            ...aiResult
+        };
     }
-    
-    return {
-        rawText: cleanedText,
-        menuItems: aiRecommendations?.menuItems || [],
-        itemScores: aiRecommendations?.itemScores || [],
-        itemCriteria: aiRecommendations?.itemCriteria || [],
-    }
-}
+};
 
 module.exports = {
     curateFoursquarePlaces,
-    curateMenuRecs
+    analyzeMenuImageUnified
 }

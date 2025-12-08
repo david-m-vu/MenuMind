@@ -1,4 +1,4 @@
-// MAY BE DEPRECATED
+// For direct image processing
 
 const axios = require("axios");
 async function callMenuAI(image, conditions, restrictions) {

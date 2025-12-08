@@ -272,13 +272,6 @@
 }
 
 .menuInfoRetake {
-  background: transparent;
-  border: 1px solid #ccc;
-  padding: 8px 12px;
-  border-radius: 6px;
-}
-
-.menuInfoSubmit {
   background: #1976d2;
   color: #fff;
   border: none;
