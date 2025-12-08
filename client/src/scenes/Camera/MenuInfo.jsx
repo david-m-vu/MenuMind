@@ -21,24 +21,24 @@ const MenuInfo = ({ usePlaceholder = false }) => {
   const [error, setError] = useState(null)
 
   // Placeholder data for testing/demo mode
-  // const placeholderRecommended = [
-  //   { name: 'Grilled Salmon Salad', reason: 'High in omega-3, gluten-free' },
-  //   { name: 'Quinoa Buddha Bowl', reason: 'Plant-based, nutrient-rich' },
-  //   { name: 'Chicken & Veggie Stir-Fry', reason: 'Low dairy, customizable' },
-  // ]
+  const placeholderRecommended = [
+    { name: 'Grilled Salmon Salad', reason: 'High in omega-3, gluten-free' },
+    { name: 'Quinoa Buddha Bowl', reason: 'Plant-based, nutrient-rich' },
+    { name: 'Chicken & Veggie Stir-Fry', reason: 'Low dairy, customizable' },
+  ]
 
-  // const placeholderRisky = [
-  //   { name: 'Creamy Pasta Carbonara', reason: 'Contains dairy, gluten' },
-  //   { name: 'Spicy Buffalo Wings', reason: 'High spice level' },
-  //   { name: 'Shellfish Paella', reason: 'Contains shellfish allergen' },
-  // ]
-  const placeholderRecommended = [{name: 'Unable to load recommendations', reason: ''}]
-  const placeholderRisky = [{name: 'Unable to load risky items', reason: ''}]
+  const placeholderRisky = [
+    { name: 'Creamy Pasta Carbonara', reason: 'Contains dairy, gluten' },
+    { name: 'Spicy Buffalo Wings', reason: 'High spice level' },
+    { name: 'Shellfish Paella', reason: 'Contains shellfish allergen' },
+  ]
+
 
   // Use recommendations/avoid if present, else fallback to menuItems/itemScores
   const recommendations = aiResult.recommendations ?? aiResult.menuItems ?? [];
   const avoid = aiResult.avoid ?? aiResult.itemScores ?? [];
   const confidence = aiResult.confidence ?? null;
+  const isMenuNotFoundError = confidence === 'error';
 
   // // Raw AI data for filtering in MenuInfo
   // const menuItems = aiResult.menuItems ?? []
@@ -129,8 +129,10 @@ const MenuInfo = ({ usePlaceholder = false }) => {
 
   if (!image) return null
 
-  const recommendedItems = usePlaceholder ? placeholderRecommended : recommendations
-  const riskyItems = usePlaceholder ? placeholderRisky : avoid
+
+  const recommendedItems = usePlaceholder ? placeholderRecommended : (isMenuNotFoundError ? [] : recommendations);
+  const riskyItems = usePlaceholder ? placeholderRisky : (isMenuNotFoundError ? [] : avoid);
+
 
   return (
     <div className="menuInfoScene">
@@ -159,7 +161,13 @@ const MenuInfo = ({ usePlaceholder = false }) => {
           <div className="placeholderBadge">Image Confidence: {confidence}</div>
         )}
 
-        {(recommendedItems.length > 0 || riskyItems.length > 0) && (
+        {isMenuNotFoundError && (
+          <div className="noRecommendations noRecommendations--error">
+            <p>Error: menu not found in picture. Please retake the picture.</p>
+          </div>
+        )}
+
+        {!isMenuNotFoundError && (recommendedItems.length > 0 || riskyItems.length > 0) && (
           <div className="menuInfoRecommendations">
             {recommendedItems.length > 0 && (
               <div className="recommendationSection">
@@ -197,7 +205,7 @@ const MenuInfo = ({ usePlaceholder = false }) => {
           </div>
         )}
 
-        {!usePlaceholder && !isLoading && recommendedItems.length === 0 && riskyItems.length === 0 && (
+        {!usePlaceholder && !isLoading && !isMenuNotFoundError && recommendedItems.length === 0 && riskyItems.length === 0 && (
           <div className={error ? "noRecommendations noRecommendations--error" : "noRecommendations"}>
             <p>{error || 'No recommendations found.'}</p>
           </div>
